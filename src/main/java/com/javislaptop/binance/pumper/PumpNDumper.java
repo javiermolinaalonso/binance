@@ -1,4 +1,4 @@
-package com.javislaptop.binance;
+package com.javislaptop.binance.pumper;
 
 import com.binance.api.client.BinanceApiRestClient;
 import com.binance.api.client.domain.account.AssetBalance;
@@ -6,6 +6,7 @@ import com.binance.api.client.domain.account.NewOrderResponse;
 import com.binance.api.client.domain.account.NewOrderResponseType;
 import com.binance.api.client.domain.account.Trade;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
@@ -14,6 +15,7 @@ import java.util.Scanner;
 import static com.binance.api.client.domain.account.NewOrder.marketBuy;
 import static com.binance.api.client.domain.account.NewOrder.marketSell;
 
+@Service
 public class PumpNDumper {
 
     private final BinanceApiRestClient binance;
