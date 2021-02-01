@@ -42,7 +42,7 @@ public class BinanceApplication {
             System.out.println("2. quit");
             String option = scanner.nextLine();
             if (option.equals("1")) {
-                new PumpNDumper("0.0006", binance, scanner).execute();
+                new PumpNDumper(binance, scanner).execute();
             }
 
 
