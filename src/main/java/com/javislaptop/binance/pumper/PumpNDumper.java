@@ -50,7 +50,7 @@ public class PumpNDumper {
 
     private String getAmount() {
         AssetBalance assetBalance = binance.getAccount().getAssetBalance("BTC");
-        return formatter.format(readAmount(assetBalance));
+        return formatter.format(readAmount(assetBalance)).replaceAll(",", ".");
     }
 
     private BigDecimal readAmount(AssetBalance assetBalance) {
