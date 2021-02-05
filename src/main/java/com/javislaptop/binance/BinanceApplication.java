@@ -32,18 +32,21 @@ public class BinanceApplication {
     @Bean
     public CommandLineRunner commandLineRunner(ApplicationContext ctx) {
         return args -> {
-            System.out.println("1. pump");
-            System.out.println("2. detect");
-            System.out.println("9. quit");
-            String option = scanner.nextLine();
-            if (option.equals("1")) {
+            try {
+//            System.out.println("1. pump");
+//            System.out.println("2. detect");
+//            System.out.println("9. quit");
+//            String option = scanner.nextLine();
+//            if (option.equals("1")) {
                 pumpNDumper.execute();
-            } else if (option.equals("2")) {
-                pumpDetector.showPumps();
+//            } else if (option.equals("2")) {
+//                pumpDetector.showPumps();
+//            }
+            } catch (Exception e ){
+                e.printStackTrace();
+            } finally {
+                System.exit(0);
             }
-
-
-            System.exit(0);
         };
     }
 
