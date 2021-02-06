@@ -7,6 +7,8 @@ import com.binance.api.client.domain.account.NewOrderResponse;
 import com.binance.api.client.domain.account.NewOrderResponseType;
 import com.binance.api.client.domain.account.Trade;
 import com.binance.api.client.domain.account.request.CancelOrderRequest;
+import com.binance.api.client.domain.market.OrderBook;
+import com.javislaptop.binance.detector.AskOutOfMoneyDetector;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
@@ -25,12 +27,14 @@ public class PumpNDumper {
 
     private final BinanceApiRestClient binance;
     private final Scanner scanner;
+    private final AskOutOfMoneyDetector askOutOfMoneyDetector;
     private final DecimalFormat buyFormatter;
     private final DecimalFormat sellFormatter;
 
-    public PumpNDumper(BinanceApiRestClient binance, Scanner scanner) {
+    public PumpNDumper(BinanceApiRestClient binance, Scanner scanner, AskOutOfMoneyDetector askOutOfMoneyDetector) {
         this.binance = binance;
         this.scanner = scanner;
+        this.askOutOfMoneyDetector = askOutOfMoneyDetector;
         DecimalFormatSymbols otherSymbols = new DecimalFormatSymbols(Locale.US);
         otherSymbols.setDecimalSeparator('.');
         this.buyFormatter = new DecimalFormat("0.00000000", otherSymbols);
@@ -38,10 +42,13 @@ public class PumpNDumper {
     }
 
     public void execute() {
-        String btcAmount = getAmount();
-        Optional<BigDecimal> limit = getLimit();
         String ticker = getTicker();
         String symbol = getSymbol(ticker);
+
+        String btcAmount = getAmount();
+        Optional<BigDecimal> limit = getLimit();
+
+
 
         NewOrderResponse buyResponse = binance.newOrder(marketBuy(symbol, null).quoteOrderQty(btcAmount).newOrderRespType(NewOrderResponseType.FULL));
         String buyprice = buyResponse.getFills().stream().map(Trade::getPrice).findFirst().orElse("");
