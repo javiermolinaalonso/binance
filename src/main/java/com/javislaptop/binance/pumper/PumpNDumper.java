@@ -34,7 +34,7 @@ public class PumpNDumper {
         DecimalFormatSymbols otherSymbols = new DecimalFormatSymbols(Locale.US);
         otherSymbols.setDecimalSeparator('.');
         this.buyFormatter = new DecimalFormat("0.00000000", otherSymbols);
-        this.sellFormatter = new DecimalFormat("0.000000", otherSymbols);
+        this.sellFormatter = new DecimalFormat("0.00000000", otherSymbols);
     }
 
     public void execute() {
