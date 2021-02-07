@@ -11,6 +11,7 @@ import com.binance.api.client.domain.account.request.CancelOrderRequest;
 import com.binance.api.client.domain.account.request.CancelOrderResponse;
 import com.binance.api.client.domain.account.request.OrderStatusRequest;
 import com.binance.api.client.domain.market.AggTrade;
+import com.binance.api.client.domain.market.OrderBookEntry;
 import com.binance.api.client.exception.BinanceApiException;
 import org.springframework.stereotype.Service;
 
@@ -54,8 +55,18 @@ public class Binance {
         String priceStr = formatter.formatPrice(symbol, priceLimit);
         String amountStr = formatter.formatAmount(symbol, amount.divide(priceLimit, 8, RoundingMode.DOWN));
         System.out.println(String.format("Placing limit order for %s. Amount %s at price %s", symbol, amountStr, priceStr));
-        String orderId = binanceApiRestClient.newOrder(limitBuy(symbol, TimeInForce.GTC, amountStr, priceStr).newOrderRespType(NewOrderResponseType.FULL)).getClientOrderId();
+        Long orderId = binanceApiRestClient.newOrder(limitBuy(symbol, TimeInForce.GTC, amountStr, priceStr).newOrderRespType(NewOrderResponseType.FULL)).getOrderId();
 
+        return getOrder(symbol, orderId);
+    }
+
+    public Order buyMarket(String symbol, BigDecimal amount) {
+        String amountStr = formatter.formatPrice(symbol, amount);
+        NewOrderResponse newOrderResponse = binanceApiRestClient.newOrder(marketBuy(symbol, null).quoteOrderQty(amountStr).newOrderRespType(NewOrderResponseType.FULL));
+        return getOrder(symbol, newOrderResponse.getOrderId());
+    }
+
+    private Order getOrder(String symbol, Long orderId) {
         OrderStatusRequest orderStatusRequest = new OrderStatusRequest(symbol, orderId);
         int count = 0;
         Order order = null;
@@ -73,15 +84,9 @@ public class Binance {
                 System.out.println(e.getMessage());
             }
 
-        } while ((order != null && order.getStatus() != OrderStatus.FILLED) && count < 2000);
+        } while ((order == null || order.getStatus() != OrderStatus.FILLED) && count < 2000);
 
         return order;
-    }
-
-    public Order buyMarket(String symbol, BigDecimal amount) {
-        String amountStr = formatter.formatAmount(symbol, amount);
-        NewOrderResponse newOrderResponse = binanceApiRestClient.newOrder(marketBuy(symbol, null).quoteOrderQty(amountStr).newOrderRespType(NewOrderResponseType.FULL));
-        return binanceApiRestClient.getOrderStatus(new OrderStatusRequest(symbol, newOrderResponse.getOrderId()));
     }
 
     public NewOrderResponse sellLimit(String symbol, String amount, BigDecimal targetPrice) {
@@ -103,7 +108,10 @@ public class Binance {
     }
 
     public void printPrices(String symbol, String purchasePricestr) {
-        BigDecimal price = new BigDecimal(binanceApiRestClient.getPrice(symbol).getPrice());
+        String p = binanceApiRestClient.getOrderBook(symbol, 5).getBids().stream().map(OrderBookEntry::getPrice).findAny().orElseGet(
+                () -> binanceApiRestClient.getPrice(symbol).getPrice()
+        );
+        BigDecimal price = new BigDecimal(p);
         BigDecimal purchasePrice = new BigDecimal(purchasePricestr);
         BigDecimal benefit = price.subtract(purchasePrice).divide(purchasePrice, 8, RoundingMode.DOWN).multiply(BigDecimal.valueOf(100));
         System.out.println("Expected benefit: " + benefit.toPlainString() + "%");
