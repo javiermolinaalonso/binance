@@ -30,6 +30,7 @@ public class PumpDetector {
         btcPairs.forEach(pair -> {
             boolean orderBookOverAskOutOfMoney = askOutOfMoneyDetector.isOrderBookOverAskOutOfMoney(pair, 50);
             if (orderBookOverAskOutOfMoney) {
+                
                 System.out.println(pair);
             }
         });
