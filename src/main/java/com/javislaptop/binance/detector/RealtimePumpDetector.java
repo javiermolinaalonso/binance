@@ -117,8 +117,12 @@ public class RealtimePumpDetector {
             }
 
             List<Candlestick> lastHour = binance.getLastHour(symbol);
-            double averageVolumePer100millis = lastHour.stream().mapToDouble(c -> new BigDecimal(c.getVolume()).doubleValue()).average().orElse(0d) / 600d;
-            double volumeIncrease = (p.getVolume() / averageVolumePer100millis) - 1;
+            List<Candlestick> lastMinute = binance.getLastMinute(symbol);
+            double averageVolumeLastHour = lastHour.stream().mapToDouble(c -> new BigDecimal(c.getVolume()).doubleValue()).average().orElse(0d) / 600d;
+            double averageVolumeLastMinute = lastMinute.stream().mapToDouble(c -> new BigDecimal(c.getVolume()).doubleValue()).average().orElse(0d) / 600d;
+            double volumeIncrease = (p.getVolume() / averageVolumeLastHour) - 1;
+            double volumeIncreaseLastMinute = (averageVolumeLastMinute / averageVolumeLastHour) - 1;
+            System.out.println(String.format("Volume increase last minute: %.4f. Volume last minute: %.4f. Volume last hour: %.4f", volumeIncreaseLastMinute, averageVolumeLastMinute, averageVolumeLastHour));
             if (volumeIncrease > pumpDetectorProperties.getVolumeRatio()) {
                 System.out.println(String.format("PUMP CONFIRMED!!!! Volume increase is %.4f", volumeIncrease));
             } else {
