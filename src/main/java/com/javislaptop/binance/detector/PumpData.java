@@ -25,7 +25,7 @@ public class PumpData {
     public PumpData(Instant when, List<? extends AggTrade> trades) {
         trades.sort(Comparator.comparing(AggTrade::getTradeTime));
         this.when = when;
-        this.volume = trades.stream().mapToDouble(t -> extractVolume(t.getPrice(), t.getQuantity())).sum();
+        this.volume = trades.stream().mapToDouble(t -> new BigDecimal(t.getQuantity()).doubleValue()).sum();
         this.trades = trades.size();
         this.makerTrades = trades.stream().mapToInt(this::makerTrades).sum();
         this.initialPrice = new BigDecimal(trades.get(0).getPrice());
@@ -109,10 +109,6 @@ public class PumpData {
         }
     }
 
-    private int extractTrades(AggTrade aggTrade) {
-        return new BigDecimal(aggTrade.getQuantity()).intValue();
-    }
-
     public static Double extractVolume(String price, String quantity) {
         return new BigDecimal(price).multiply(new BigDecimal(quantity)).doubleValue();
     }
@@ -123,5 +119,10 @@ public class PumpData {
 
     public double getPriceIncrease() {
         return finalPrice.subtract(initialPrice).divide(initialPrice, 4, RoundingMode.DOWN).multiply(BigDecimal.valueOf(100)).doubleValue();
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s: Volume: %.5f, Ratio: %.5f, Trades: %s. Buys: %d, Sell: %d, Unknown: %d. Initial Price: %.8f. Final price: %.8f", when, volume, getMakerRatio(), trades, buys, sells, buyOrSell, initialPrice, finalPrice);
     }
 }

@@ -21,10 +21,10 @@ public class BinanceApplication {
     }
 
     private final Scanner scanner;
-    private final RealtimePumpDetector historicalPumpDetector;
+    private final HistoricalPumpDetector historicalPumpDetector;
     private final PumpNDumper pumpNDumper;
 
-    public BinanceApplication(Scanner scanner, RealtimePumpDetector realtimePumpDetector, PumpNDumper pumpNDumper) {
+    public BinanceApplication(Scanner scanner, HistoricalPumpDetector realtimePumpDetector, PumpNDumper pumpNDumper) {
         this.scanner = scanner;
         this.historicalPumpDetector = realtimePumpDetector;
         this.pumpNDumper = pumpNDumper;
@@ -46,7 +46,7 @@ public class BinanceApplication {
 //            } catch (Exception e ){
 //                e.printStackTrace();
 //            } finally {
-//                System.exit(0);
+                System.exit(0);
 //            }
         };
     }

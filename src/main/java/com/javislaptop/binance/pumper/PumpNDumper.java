@@ -1,24 +1,20 @@
 package com.javislaptop.binance.pumper;
 
 import com.binance.api.client.domain.OrderStatus;
-import com.binance.api.client.domain.TimeInForce;
-import com.binance.api.client.domain.account.*;
-import com.binance.api.client.domain.account.request.CancelOrderRequest;
+import com.binance.api.client.domain.account.NewOrderResponse;
+import com.binance.api.client.domain.account.Order;
+import com.binance.api.client.domain.account.Trade;
 import com.javislaptop.binance.api.Binance;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.function.Function;
+import java.util.Optional;
+import java.util.Scanner;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.function.Supplier;
-
-import static com.binance.api.client.domain.account.NewOrder.*;
 
 @Service
 public class PumpNDumper {
@@ -104,7 +100,7 @@ public class PumpNDumper {
 
 
     private String getSymbol(String ticker) {
-        String symbol = ticker.toUpperCase() + "BTC";
+        String symbol = ticker.toUpperCase() + "USDT";
         System.out.println("Purchasing " + symbol);
         return symbol;
     }
@@ -148,9 +144,9 @@ public class PumpNDumper {
         }
     }
     private BigDecimal getAmount() {
-        String assetBalance = binance.getAssetBalance("BTC");
+        String assetBalance = binance.getAssetBalance("USDT");
         BigDecimal result = readAmount(assetBalance);
-        System.out.println(String.format("You will bet %s BTC", result.toPlainString()));
+        System.out.println(String.format("You will bet %s USDT", result.toPlainString()));
 
         String bnbBalance = binance.getAssetBalance("BNB");
         System.out.println(String.format("You have %s BNB, please make sure you have enough BNB to pay the fees. Keep at least 1 percent", bnbBalance));

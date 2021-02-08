@@ -17,6 +17,9 @@ public class PumpDetectorProperties {
     private Double maxBuyerRatio;
     private Double volumeRatio;
     private Double averageAskDistance;
+    private boolean orderBookEnabled;
+    private boolean volumeEnabled;
+    private Long timeToDetect;
 
     public List<String> getSymbols() {
         return symbols;
@@ -79,5 +82,29 @@ public class PumpDetectorProperties {
     public PumpDetectorProperties setAverageAskDistance(Double averageAskDistance) {
         this.averageAskDistance = averageAskDistance;
         return this;
+    }
+
+    public boolean isOrderBookEnabled() {
+        return orderBookEnabled;
+    }
+
+    public void setOrderBookEnabled(boolean orderBookEnabled) {
+        this.orderBookEnabled = orderBookEnabled;
+    }
+
+    public boolean isVolumeEnabled() {
+        return volumeEnabled;
+    }
+
+    public void setVolumeEnabled(boolean volumeEnabled) {
+        this.volumeEnabled = volumeEnabled;
+    }
+
+    public Long getTimeToDetect() {
+        return timeToDetect;
+    }
+
+    public void setTimeToDetect(Long timeToDetect) {
+        this.timeToDetect = timeToDetect;
     }
 }

@@ -1,6 +1,6 @@
 binance:
   key:
-  secret: 
+  secret:
 
 pump-detector:
   minTrades: 10
@@ -9,6 +9,9 @@ pump-detector:
   maxBuyerRatio: 0.5
   volumeRatio: 2
   averageAskDistance: 3
+  orderBookEnabled: false
+  volumeEnabled: true
+  timeToDetect: 500
   symbols:
     - GASBTC
     - MCOBTC

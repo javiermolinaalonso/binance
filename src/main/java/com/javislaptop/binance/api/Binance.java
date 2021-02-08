@@ -124,17 +124,17 @@ public class Binance {
         return binanceApiRestClient.getExchangeInfo();
     }
 
-    public List<Candlestick> getLastHour(String symbol) {
-        Instant from = Instant.now(Clock.systemUTC()).minus(65, ChronoUnit.MINUTES);
-        Instant to = Instant.now(Clock.systemUTC()).minus(5, ChronoUnit.MINUTES);
-        return binanceApiRestClient.getCandlestickBars(symbol, CandlestickInterval.ONE_MINUTE, 60, from.toEpochMilli(), to.toEpochMilli());
-    }
-
     public OrderBook getOrderBook(String symbol) {
         return binanceApiRestClient.getOrderBook(symbol, 5000);
     }
 
-    public List<Candlestick> getLastMinute(String symbol) {
-        return binanceApiRestClient.getCandlestickBars(symbol, CandlestickInterval.ONE_MINUTE, 1, null, null);
+    public List<Candlestick> getLastMinute(String symbol, Instant when) {
+        return binanceApiRestClient.getCandlestickBars(symbol, CandlestickInterval.ONE_MINUTE, 1, when.minus(1, ChronoUnit.MINUTES).toEpochMilli(), when.toEpochMilli());
+    }
+
+    public List<Candlestick> getLastHour(String symbol, Instant when) {
+        Instant from = when.minus(65, ChronoUnit.MINUTES);
+        Instant to = when.minus(5, ChronoUnit.MINUTES);
+        return binanceApiRestClient.getCandlestickBars(symbol, CandlestickInterval.ONE_MINUTE, 60, from.toEpochMilli(), to.toEpochMilli());
     }
 }
