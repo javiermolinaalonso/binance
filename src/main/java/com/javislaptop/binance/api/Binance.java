@@ -10,13 +10,16 @@ import com.binance.api.client.domain.account.Trade;
 import com.binance.api.client.domain.account.request.CancelOrderRequest;
 import com.binance.api.client.domain.account.request.CancelOrderResponse;
 import com.binance.api.client.domain.account.request.OrderStatusRequest;
-import com.binance.api.client.domain.market.AggTrade;
-import com.binance.api.client.domain.market.OrderBookEntry;
+import com.binance.api.client.domain.general.ExchangeInfo;
+import com.binance.api.client.domain.market.*;
 import com.binance.api.client.exception.BinanceApiException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
@@ -115,5 +118,19 @@ public class Binance {
         BigDecimal purchasePrice = new BigDecimal(purchasePricestr);
         BigDecimal benefit = price.subtract(purchasePrice).divide(purchasePrice, 8, RoundingMode.DOWN).multiply(BigDecimal.valueOf(100));
         System.out.println("Expected benefit: " + benefit.toPlainString() + "%");
+    }
+
+    public ExchangeInfo getExchangeInfo() {
+        return binanceApiRestClient.getExchangeInfo();
+    }
+
+    public List<Candlestick> getLastHour(String symbol) {
+        Instant from = Instant.now(Clock.systemUTC()).minus(65, ChronoUnit.MINUTES);
+        Instant to = Instant.now(Clock.systemUTC()).minus(5, ChronoUnit.MINUTES);
+        return binanceApiRestClient.getCandlestickBars(symbol, CandlestickInterval.ONE_MINUTE, 60, from.toEpochMilli(), to.toEpochMilli());
+    }
+
+    public OrderBook getOrderBook(String symbol) {
+        return binanceApiRestClient.getOrderBook(symbol, 5000);
     }
 }

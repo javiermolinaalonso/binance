@@ -23,6 +23,12 @@ public class BinanceConfig {
                 .newInstance(binanceProperties.getKey(), binanceProperties.getSecret())
                 .newRestClient();
     }
+    @Bean
+    public BinanceApiWebSocketClient binanceApiWebSocketClient() {
+        return BinanceApiClientFactory
+                .newInstance(binanceProperties.getKey(), binanceProperties.getSecret())
+                .newWebSocketClient();
+    }
 
     @Bean
     public Scanner scanner() {
