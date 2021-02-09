@@ -68,10 +68,10 @@ public class RealtimePumpDetector {
             eventsMap.entrySet()
                     .stream().filter(k -> !k.getValue().isEmpty())
                     .forEach(k -> runPump(k.getKey()));
-            if (counter.incrementAndGet() % 100 == 0) {
+            if (counter.incrementAndGet() % 1000 == 0) {
                 System.out.println();
+                System.out.println(".");
             }
-            System.out.print(".");
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }

@@ -20,10 +20,12 @@ import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
 import static com.binance.api.client.domain.account.NewOrder.*;
+import static com.javislaptop.binance.Utils.calculateBenefit;
 import static java.util.Optional.empty;
 
 @Service
@@ -54,6 +56,7 @@ public class Binance {
     public Optional<Trade> getTrade(String symbol, Long orderId) {
         return binanceApiRestClient.getMyTrades(symbol).stream().filter(t -> t.getOrderId().equals(String.valueOf(orderId))).findAny();
     }
+
     public Order buyLimit(String symbol, BigDecimal amount, BigDecimal priceLimit) {
         String priceStr = formatter.formatPrice(symbol, priceLimit);
         String amountStr = formatter.formatAmount(symbol, amount.divide(priceLimit, 8, RoundingMode.DOWN));
@@ -111,12 +114,9 @@ public class Binance {
     }
 
     public void printPrices(String symbol, String purchasePricestr) {
-        String p = binanceApiRestClient.getOrderBook(symbol, 5).getBids().stream().map(OrderBookEntry::getPrice).findAny().orElseGet(
-                () -> binanceApiRestClient.getPrice(symbol).getPrice()
-        );
-        BigDecimal price = new BigDecimal(p);
+        BigDecimal price = getBuyPrice(symbol);
         BigDecimal purchasePrice = new BigDecimal(purchasePricestr);
-        BigDecimal benefit = price.subtract(purchasePrice).divide(purchasePrice, 8, RoundingMode.DOWN).multiply(BigDecimal.valueOf(100));
+        BigDecimal benefit = calculateBenefit(price, purchasePrice);
         System.out.println("Expected benefit: " + benefit.toPlainString() + "%");
     }
 
@@ -128,6 +128,31 @@ public class Binance {
         return binanceApiRestClient.getOrderBook(symbol, limit);
     }
 
+    public BigDecimal getBuyPrice(String symbol) {
+        String price = binanceApiRestClient.getOrderBook(symbol, 5)
+                .getAsks()
+                .stream()
+                .sorted(Comparator.comparing(OrderBookEntry::getPrice))
+                .map(OrderBookEntry::getPrice)
+                .findFirst()
+                .orElseGet(
+                        () -> binanceApiRestClient.getPrice(symbol).getPrice()
+                );
+        return new BigDecimal(price);
+    }
+
+    public BigDecimal getSellPrice(String symbol) {
+        String price = binanceApiRestClient.getOrderBook(symbol, 5)
+                .getBids()
+                .stream()
+                .sorted((a, b) -> b.getPrice().compareTo(a.getPrice()))
+                .map(OrderBookEntry::getPrice)
+                .findFirst()
+                .orElseGet(
+                        () -> binanceApiRestClient.getPrice(symbol).getPrice()
+                );
+        return new BigDecimal(price);
+    }
     public List<Candlestick> getLastHour(String symbol, Instant when) {
         Instant from = when.minus(65, ChronoUnit.MINUTES);
         Instant to = when.minus(5, ChronoUnit.MINUTES);

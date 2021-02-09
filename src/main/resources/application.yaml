@@ -2,18 +2,24 @@ binance:
   key:
   secret:
 
+pump-strategy:
+  quick:
+    timeout: 60000
+    benefitPercent: 0.499
+    lossPercent: -2.5
+
 pump-detector:
-  minTrades: 10
-  minBuys: 2
+  minTrades: 50
+  minBuys: 30
   minIncrease: 0
-  maxBuyerRatio: 0.5
-  volumeRatio: 2
+  maxBuyerRatio: 0.2
+  volumeRatio: 50
   averageAskDistance: 3
   orderBookEnabled: false
   volumeEnabled: true
-  timeToDetect: 500
+  timeToDetect: 200
   symbols:
-    - GASBTC
+    - ETHBTC
     - MCOBTC
     - WTCBTC
     - LRCBTC
