@@ -60,7 +60,7 @@ public class RealtimePumpDetector {
             public void run() {
                 runPump();
             }
-        }, 0, 100);
+        }, 0, pumpDetectorProperties.getTimeToDetect());
     }
 
     public void runPump() {

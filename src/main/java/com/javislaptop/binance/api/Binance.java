@@ -124,12 +124,8 @@ public class Binance {
         return binanceApiRestClient.getExchangeInfo();
     }
 
-    public OrderBook getOrderBook(String symbol) {
-        return binanceApiRestClient.getOrderBook(symbol, 5000);
-    }
-
-    public List<Candlestick> getLastMinute(String symbol, Instant when) {
-        return binanceApiRestClient.getCandlestickBars(symbol, CandlestickInterval.ONE_MINUTE, 1, when.minus(1, ChronoUnit.MINUTES).toEpochMilli(), when.toEpochMilli());
+    public OrderBook getOrderBook(String symbol, int limit) {
+        return binanceApiRestClient.getOrderBook(symbol, limit);
     }
 
     public List<Candlestick> getLastHour(String symbol, Instant when) {
