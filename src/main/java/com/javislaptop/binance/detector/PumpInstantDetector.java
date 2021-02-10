@@ -53,7 +53,7 @@ public class PumpInstantDetector {
                 .stream()
                 .filter(this::isPumpDetected)
                 .forEach(p -> {
-//                    System.out.println(String.format("PUMP DETECTED!!!! %s %s", symbol, p.toString()));
+                    System.out.println(String.format("PUMP DETECTED!!!! %s %s", symbol, p.toString()));
 
                     if (pumpDetectorProperties.isOrderBookEnabled()) {
                         OrderBook orderBook = binance.getOrderBook(symbol, 5000);
