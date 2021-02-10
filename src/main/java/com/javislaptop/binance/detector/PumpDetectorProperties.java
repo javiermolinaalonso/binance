@@ -14,12 +14,14 @@ public class PumpDetectorProperties {
     private Integer minTrades;
     private Integer minBuys;
     private Integer minIncrease;
-    private Double maxBuyerRatio;
+    private Double maxMakerRatio;
     private Double volumeRatio;
     private Double averageAskDistance;
     private boolean orderBookEnabled;
     private boolean volumeEnabled;
     private Long timeToDetect;
+    private Integer minSells;
+    private double minDecrease;
 
     public List<String> getSymbols() {
         return symbols;
@@ -57,12 +59,12 @@ public class PumpDetectorProperties {
         return this;
     }
 
-    public Double getMaxBuyerRatio() {
-        return maxBuyerRatio;
+    public Double getMaxMakerRatio() {
+        return maxMakerRatio;
     }
 
-    public PumpDetectorProperties setMaxBuyerRatio(Double maxBuyerRatio) {
-        this.maxBuyerRatio = maxBuyerRatio;
+    public PumpDetectorProperties setMaxMakerRatio(Double maxMakerRatio) {
+        this.maxMakerRatio = maxMakerRatio;
         return this;
     }
 
@@ -106,5 +108,21 @@ public class PumpDetectorProperties {
 
     public void setTimeToDetect(Long timeToDetect) {
         this.timeToDetect = timeToDetect;
+    }
+
+    public Integer getMinSells() {
+        return minSells;
+    }
+
+    public void setMinSells(Integer minSells) {
+        this.minSells = minSells;
+    }
+
+    public double getMinDecrease() {
+        return minDecrease;
+    }
+
+    public void setMinDecrease(double minDecrease) {
+        this.minDecrease = minDecrease;
     }
 }

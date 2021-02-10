@@ -43,15 +43,26 @@ public class PumpData {
         }
         ListIterator<? extends AggTrade> aggTradeListIterator = lnkList.listIterator(1);
         AggTrade previous = aggTradeListIterator.previous();
+        Boolean wasBuy = null;
         do {
             AggTrade current = aggTradeListIterator.next();
             int priceIncrease = isPriceIncrease(previous, current);
             if (priceIncrease > 0) {
                 buys++;
+                wasBuy = true;
             } else if (priceIncrease < 0) {
                 sells++;
+                wasBuy = false;
             } else {
-                buyOrSell++;
+                if (wasBuy != null) {
+                    if (wasBuy) {
+                        buys++;
+                    } else {
+                        sells++;
+                    }
+                } else {
+                    buyOrSell++;
+                }
             }
             previous = current;
         }while(aggTradeListIterator.hasNext());

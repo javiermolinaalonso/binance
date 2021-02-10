@@ -7,19 +7,12 @@ import com.javislaptop.binance.api.Binance;
 import com.javislaptop.binance.strategy.PurchaseAndSellQuickStrategy;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.math.BigDecimal;
-import java.nio.file.Files;
-import java.nio.file.StandardOpenOption;
-import java.time.Clock;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import static com.javislaptop.binance.BinanceApplication.PATH_TRADES;
 
 @Service
 public class PumpInstantDetector {
@@ -92,7 +85,12 @@ public class PumpInstantDetector {
     private boolean isPumpDetected(PumpData pData) {
         return pData.getTrades() > pumpDetectorProperties.getMinTrades()
                 && pData.getBuys() > pumpDetectorProperties.getMinBuys()
-                && pData.getPriceIncrease() > pumpDetectorProperties.getMinIncrease()
-                && pData.getMakerRatio() < pumpDetectorProperties.getMaxBuyerRatio();
+                && pData.getSells() > pumpDetectorProperties.getMinSells()
+                && (
+                        pData.getPriceIncrease() > pumpDetectorProperties.getMinIncrease()
+                        || pData.getPriceIncrease() < pumpDetectorProperties.getMinDecrease()
+                )
+                &&
+                pData.getMakerRatio() < pumpDetectorProperties.getMaxMakerRatio();
     }
 }
