@@ -14,8 +14,8 @@ public class PumpData {
 
     private final Instant when;
     private final Double volume;
-    private BigDecimal initialPrice;
-    private BigDecimal finalPrice;
+    private final BigDecimal initialPrice;
+    private final BigDecimal finalPrice;
     private final Integer trades;
     private final Integer makerTrades;
     private Integer buys = 0;

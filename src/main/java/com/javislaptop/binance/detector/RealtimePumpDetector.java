@@ -7,9 +7,13 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 @Service
 @EnableConfigurationProperties(PumpDetectorProperties.class)
@@ -20,6 +24,7 @@ public class RealtimePumpDetector {
     private final PumpInstantDetector pumpInstantDetector;
 
     private final ConcurrentHashMap<String, List<AggTradeEvent>> eventsMap;
+    private final ConcurrentHashMap<String, Closeable> currentPumps;
     private final AtomicInteger counter = new AtomicInteger(0);
 
     public RealtimePumpDetector(BinanceApiWebSocketClient binanceWebsocket, PumpDetectorProperties pumpDetectorProperties, PumpInstantDetector pumpInstantDetector) {
@@ -27,6 +32,7 @@ public class RealtimePumpDetector {
         this.pumpDetectorProperties = pumpDetectorProperties;
         this.pumpInstantDetector = pumpInstantDetector;
         this.eventsMap = new ConcurrentHashMap<>();
+        this.currentPumps = new ConcurrentHashMap<>();
     }
 
     @PostConstruct
@@ -49,39 +55,48 @@ public class RealtimePumpDetector {
                 .forEach(
                         t -> {
                             eventsMap.put(t, new ArrayList<>());
-                            binanceWebsocket.onAggTradeEvent(t.toLowerCase(), binanceApiCallback);
+                            currentPumps.put(t, binanceWebsocket.onAggTradeEvent(t.toLowerCase(), binanceApiCallback));
                         }
                 );
     }
 
     public void showPumps() {
+        Consumer<String> callback = key -> {
+            System.out.println("Stopping events for " + key);
+            Closeable closeable = currentPumps.get(key);
+            if (closeable != null) {
+                try {
+                    closeable.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+
         new Timer().schedule(new TimerTask() {
             @Override
             public void run() {
-                runPump();
+                runPump(callback);
             }
         }, 0, pumpDetectorProperties.getTimeToDetect());
     }
 
-    public void runPump() {
+    public void runPump(Consumer<String> callback) {
         try {
             eventsMap.entrySet()
                     .stream().filter(k -> !k.getValue().isEmpty())
-                    .forEach(k -> runPump(k.getKey()));
-            if (counter.incrementAndGet() % 1000 == 0) {
-
-            }
+                    .forEach(k -> runPump(k.getKey(), callback));
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
     }
 
-    private void runPump(String symbol) {
+    private void runPump(String symbol, Consumer<String> callback) {
         List<AggTradeEvent> trades = new ArrayList<>(eventsMap.get(symbol));
         eventsMap.get(symbol).clear();
-
-        pumpInstantDetector.detect(symbol, trades);
+        pumpInstantDetector.detect(symbol, trades, callback);
     }
+
 
 
 }

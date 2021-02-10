@@ -1,0 +1,19 @@
+binance:
+  key:
+  secret:
+
+pump-strategy:
+  quick:
+    timeout: 10000
+    benefitPercent: 100
+    lossPercent: -10
+    purchaseAmount: 0.0005
+
+pump-detector:
+  minTrades: 1
+  minBuys: 0
+  maxBuyerRatio: 1
+  volumeRatio: 1
+  timeToDetect: 200
+  symbols:
+    - BNBBTC
