@@ -25,7 +25,7 @@ public class BinanceApplication {
     @Bean
     public CommandLineRunner commandLineRunner(ApplicationContext ctx) {
         return args -> {
-            realtimePumpDetector.showPumps();
+            realtimePumpDetector.enablePumpDetection();
         };
     }
 

@@ -36,7 +36,7 @@ public class HistoricalPumpDetector {
         do {
             List<AggTrade> trades = binance.getAggTrades(symbol, null, 100000, currentStart.toInstant(ZoneOffset.UTC).toEpochMilli(), currentEnd.toInstant(ZoneOffset.UTC).toEpochMilli());
 
-            pumpInstantDetector.detect(symbol, trades, null);
+            pumpInstantDetector.detect(symbol);
 
             currentStart = currentEnd;
             currentEnd = currentStart.plus(duration);

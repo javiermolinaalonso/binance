@@ -4,16 +4,16 @@ binance:
 
 pump-strategy:
   quick:
-    timeout: 1000
-    benefitPercent: 100
-    lossPercent: -10
+    timeout: 600000
+    benefitPercent: 2
+    lossPercent: -5
     purchaseAmount: 0.0001
 
 pump-detector:
-  minTrades: 1
+  minTrades: 10
   minBuys: 0
-  maxBuyerRatio: 1
-  volumeRatio: 1
+  maxBuyerRatio: 0.2
+  volumeRatio: 5000
   timeToDetect: 200
   symbols:
     - ETHBTC

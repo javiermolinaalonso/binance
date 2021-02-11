@@ -1,32 +1,35 @@
 package com.javislaptop.binance.detector;
 
 import com.binance.api.client.domain.market.AggTrade;
-import com.javislaptop.binance.api.Binance;
+import com.javislaptop.binance.api.stream.storage.StreamDataStorage;
 import com.javislaptop.binance.strategy.PurchaseAndSellQuickStrategy;
 import com.javislaptop.binance.strategy.TradeStrategy;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Service
 public class PumpInstantDetector {
 
+    private static final Logger logger = LogManager.getLogger(PumpInstantDetector.class);
+
     private final PumpDetectorProperties pumpDetectorProperties;
     private final TradeStrategy strategy;
+    private final StreamDataStorage storage;
 
-    public PumpInstantDetector(PumpDetectorProperties pumpDetectorProperties, TradeStrategy strategy) {
+    public PumpInstantDetector(PumpDetectorProperties pumpDetectorProperties, TradeStrategy strategy, StreamDataStorage storage) {
         this.pumpDetectorProperties = pumpDetectorProperties;
         this.strategy = strategy;
+        this.storage = storage;
     }
 
-    public <T extends AggTrade> void detect(String symbol, List<T> trades, Consumer<String> callback) {
-        trades
+    public <T extends AggTrade> void detect(String symbol) {
+        storage.read(symbol)
                 .stream()
                 .sorted(Comparator.comparingLong(AggTrade::getTradeTime))
                 .collect(
@@ -40,8 +43,7 @@ public class PumpInstantDetector {
                 .filter(this::isPumpDetected)
                 .findAny()
                 .ifPresent(p -> {
-                    System.out.println(String.format("PUMP DETECTED!!!! %s %s", symbol, p.toString()));
-                    callback.accept(symbol);
+                    logger.info("PUMP DETECTED!!!! {} {}", symbol, p.toString());
                     strategy.execute(symbol);
                 });
     }
