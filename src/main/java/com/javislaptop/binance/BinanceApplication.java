@@ -1,7 +1,8 @@
 package com.javislaptop.binance;
 
-import com.javislaptop.binance.detector.HistoricalPumpDetector;
-import com.javislaptop.binance.detector.RealtimePumpDetector;
+import com.javislaptop.binance.detector.coinpair.CoinPairAnalyzer;
+import com.javislaptop.binance.detector.pump.HistoricalPumpDetector;
+import com.javislaptop.binance.detector.pump.RealtimePumpDetector;
 import com.javislaptop.binance.pumper.PumpNDumper;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -23,13 +24,13 @@ public class BinanceApplication {
     private final Scanner scanner;
     private final PumpNDumper pumpNDumper;
     private final RealtimePumpDetector realtimePumpDetector;
-    private final HistoricalPumpDetector historicalPumpDetector;
+    private final CoinPairAnalyzer coinPairAnalyzer;
 
-    public BinanceApplication(Scanner scanner, PumpNDumper pumpNDumper, RealtimePumpDetector realtimePumpDetector, HistoricalPumpDetector historicalPumpDetector) {
+    public BinanceApplication(Scanner scanner, PumpNDumper pumpNDumper, RealtimePumpDetector realtimePumpDetector, CoinPairAnalyzer coinPairAnalyzer) {
         this.scanner = scanner;
         this.pumpNDumper = pumpNDumper;
         this.realtimePumpDetector = realtimePumpDetector;
-        this.historicalPumpDetector = historicalPumpDetector;
+        this.coinPairAnalyzer = coinPairAnalyzer;
     }
 
     @Bean
@@ -38,12 +39,16 @@ public class BinanceApplication {
             try {
             System.out.println("1. Manual pump");
             System.out.println("2. Automated pump");
+            System.out.println("3. Analyze pairs");
             System.out.println("9. quit");
-            String option = scanner.nextLine();
+//            String option = scanner.nextLine();
+                String option = "3";
             if (option.equals("1")) {
                 pumpNDumper.execute();
             } else if (option.equals("2")) {
                 realtimePumpDetector.enablePumpDetection();
+            } else if(option.equals("3")) {
+                coinPairAnalyzer.execute();
             }
             } catch (Exception e ){
                 e.printStackTrace();

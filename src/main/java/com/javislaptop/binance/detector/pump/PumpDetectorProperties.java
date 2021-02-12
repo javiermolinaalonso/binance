@@ -1,4 +1,4 @@
-package com.javislaptop.binance.detector;
+package com.javislaptop.binance.detector.pump;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;

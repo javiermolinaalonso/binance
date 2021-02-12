@@ -1,4 +1,4 @@
-package com.javislaptop.binance.detector;
+package com.javislaptop.binance.detector.pump;
 
 import com.javislaptop.binance.api.stream.BinanceDataStreamer;
 import org.apache.logging.log4j.LogManager;

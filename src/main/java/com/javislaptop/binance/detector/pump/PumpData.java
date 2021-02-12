@@ -1,4 +1,4 @@
-package com.javislaptop.binance.detector;
+package com.javislaptop.binance.detector.pump;
 
 import com.binance.api.client.domain.event.AggTradeEvent;
 import com.binance.api.client.domain.market.AggTrade;

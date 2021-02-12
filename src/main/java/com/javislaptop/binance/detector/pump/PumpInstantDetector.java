@@ -1,8 +1,7 @@
-package com.javislaptop.binance.detector;
+package com.javislaptop.binance.detector.pump;
 
 import com.binance.api.client.domain.market.AggTrade;
 import com.javislaptop.binance.api.stream.storage.StreamDataStorage;
-import com.javislaptop.binance.strategy.PurchaseAndSellQuickStrategy;
 import com.javislaptop.binance.strategy.TradeStrategy;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

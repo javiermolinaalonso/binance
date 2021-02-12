@@ -1,12 +1,10 @@
-package com.javislaptop.binance.detector;
+package com.javislaptop.binance.detector.pump;
 
 import com.binance.api.client.BinanceApiRestClient;
 import com.binance.api.client.domain.market.AggTrade;
-import com.javislaptop.binance.api.stream.storage.StreamDataStorage;
 import org.springframework.stereotype.Service;
 
 import java.time.*;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static java.util.stream.Collectors.toMap;
