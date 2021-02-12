@@ -44,7 +44,7 @@ public class PumpNDumper {
         );
 
 
-        NewOrderResponse marketSell = null;
+        Order marketSell = null;
         if (sellLimit.isPresent()) {
             BigDecimal targetPrice = new BigDecimal(buyResponse.getPrice()).multiply(sellLimit.get());
 
@@ -67,10 +67,9 @@ public class PumpNDumper {
         if (marketSell != null) {
             binance.cancelOrder(symbol, marketSell.getOrderId());
         }
-        NewOrderResponse sellResponse = binance.sellMarket(symbol, buyResponse.getExecutedQty());
+        Order sellResponse = binance.sellMarket(symbol, new BigDecimal(buyResponse.getExecutedQty()));
 
-        String prices = sellResponse.getFills().stream().map(Trade::getPrice).findFirst().orElse("");
-        System.out.println(String.format("Sold %s %s at %s", sellResponse.getExecutedQty(), ticker.toUpperCase(), prices));
+        System.out.println(String.format("Sold %s %s at %s", sellResponse.getExecutedQty(), ticker.toUpperCase(), sellResponse.getPrice()));
     }
 
     private Order purchase(BigDecimal btcAmount, Optional<BigDecimal> buyLimit, String symbol) {

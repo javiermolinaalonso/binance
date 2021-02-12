@@ -1,4 +1,4 @@
-package com.javislaptop.binance.detector;
+package com.javislaptop.binance.detector.pump;
 
 import com.binance.api.client.domain.event.AggTradeEvent;
 import com.binance.api.client.domain.market.AggTrade;
@@ -14,8 +14,8 @@ public class PumpData {
 
     private final Instant when;
     private final Double volume;
-    private BigDecimal initialPrice;
-    private BigDecimal finalPrice;
+    private final BigDecimal initialPrice;
+    private final BigDecimal finalPrice;
     private final Integer trades;
     private final Integer makerTrades;
     private Integer buys = 0;

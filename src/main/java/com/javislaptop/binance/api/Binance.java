@@ -72,37 +72,56 @@ public class Binance {
         return getOrder(symbol, newOrderResponse.getOrderId());
     }
 
+    public Order sellLimit(String symbol, String amount, BigDecimal targetPrice) {
+        String price = formatter.formatPrice(symbol, targetPrice);
+        System.out.println(String.format("Selling %s at target price %s", symbol, targetPrice));
+        NewOrderResponse newOrderResponse = binanceApiRestClient.newOrder(limitSell(symbol, TimeInForce.GTC, amount, price));
+        return getOrder(symbol, newOrderResponse.getOrderId());
+    }
+
+    public Order sellMarket(String symbol, BigDecimal amount) {
+        System.out.println(String.format("Selling %s at market", symbol));
+        NewOrderResponse newOrderResponse =  binanceApiRestClient.newOrder(marketSell(symbol, formatter.formatAmount(symbol, amount)).newOrderRespType(NewOrderResponseType.FULL));
+        return getOrder(symbol, newOrderResponse.getOrderId());
+    }
+
+    public void testBuyMarket(String symbol, BigDecimal quantity) {
+        String amountStr = formatter.formatPrice(symbol, quantity);
+        binanceApiRestClient.newOrderTest(marketBuy(symbol, amountStr).newOrderRespType(NewOrderResponseType.FULL));
+    }
+
     private Order getOrder(String symbol, Long orderId) {
         OrderStatusRequest orderStatusRequest = new OrderStatusRequest(symbol, orderId);
         int count = 0;
         Order order = null;
         do {
             try {
-                System.out.println("Market limit order not filled");
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            try {
                 count += 100;
                 order = binanceApiRestClient.getOrderStatus(orderStatusRequest);
             } catch (BinanceApiException e) {
                 System.out.println(e.getMessage());
             }
-
+            if (order == null || order.getStatus() != OrderStatus.FILLED) {
+                try {
+                    System.out.println("Market limit order not filled");
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
         } while ((order == null || order.getStatus() != OrderStatus.FILLED) && count < 2000);
 
         return order;
     }
 
-    public NewOrderResponse sellLimit(String symbol, String amount, BigDecimal targetPrice) {
-        String price = formatter.formatPrice(symbol, targetPrice);
-        System.out.println("Selling at target price " + targetPrice);
-        return binanceApiRestClient.newOrder(limitSell(symbol, TimeInForce.GTC, amount, price));
+    public void testSellLimit(String symbol, BigDecimal price) {
+        String quantity = formatter.formatAmount(symbol, new BigDecimal(getAssetBalance(symbol)));
+        binanceApiRestClient.newOrderTest(limitSell(symbol, TimeInForce.GTC, quantity, formatter.formatPrice(symbol, price)).newOrderRespType(NewOrderResponseType.FULL));
     }
 
-    public NewOrderResponse sellMarket(String symbol, String amount) {
-        return binanceApiRestClient.newOrder(marketSell(symbol, amount).newOrderRespType(NewOrderResponseType.FULL));
+    public void testSellMarket(String symbol) {
+        String quantity = formatter.formatAmount(symbol, new BigDecimal(getAssetBalance(symbol)));
+        binanceApiRestClient.newOrderTest(marketSell(symbol, quantity).newOrderRespType(NewOrderResponseType.FULL));
     }
 
     public CancelOrderResponse cancelOrder(String symbol, Long orderId) {
@@ -153,6 +172,7 @@ public class Binance {
                 );
         return new BigDecimal(price);
     }
+
     public List<Candlestick> getLastHour(String symbol, Instant when) {
         Instant from = when.minus(65, ChronoUnit.MINUTES);
         Instant to = when.minus(5, ChronoUnit.MINUTES);
