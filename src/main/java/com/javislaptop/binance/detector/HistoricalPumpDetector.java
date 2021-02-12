@@ -2,6 +2,7 @@ package com.javislaptop.binance.detector;
 
 import com.binance.api.client.BinanceApiRestClient;
 import com.binance.api.client.domain.market.AggTrade;
+import com.javislaptop.binance.api.stream.storage.StreamDataStorage;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -23,8 +24,8 @@ public class HistoricalPumpDetector {
     }
 
     public void showPumps() {
-        LocalDateTime from = LocalDateTime.of(2021, 2, 3, 20, 55, 0);
-        LocalDateTime to = LocalDateTime.of(2021, 2, 3, 21, 10, 0);
+        LocalDateTime from = LocalDateTime.of(2021, 2, 12, 5, 25, 0);
+        LocalDateTime to = LocalDateTime.of(2021, 2, 12, 5, 35, 0);
 
         Duration duration = Duration.ofHours(1);
         LocalDateTime currentStart = from;
@@ -32,11 +33,11 @@ public class HistoricalPumpDetector {
         if (to.compareTo(currentEnd) < 0) {
             currentEnd = to;
         }
-        String symbol = "SKYBTC";
+        String symbol = "1INCHBTC";
         do {
             List<AggTrade> trades = binance.getAggTrades(symbol, null, 100000, currentStart.toInstant(ZoneOffset.UTC).toEpochMilli(), currentEnd.toInstant(ZoneOffset.UTC).toEpochMilli());
 
-            pumpInstantDetector.detect(symbol);
+            pumpInstantDetector.detect(symbol, trades);
 
             currentStart = currentEnd;
             currentEnd = currentStart.plus(duration);

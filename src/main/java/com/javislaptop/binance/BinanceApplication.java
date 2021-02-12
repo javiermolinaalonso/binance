@@ -1,5 +1,6 @@
 package com.javislaptop.binance;
 
+import com.javislaptop.binance.detector.HistoricalPumpDetector;
 import com.javislaptop.binance.detector.RealtimePumpDetector;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -17,9 +18,11 @@ public class BinanceApplication {
     }
 
     private final RealtimePumpDetector realtimePumpDetector;
+    private final HistoricalPumpDetector historicalPumpDetector;
 
-    public BinanceApplication(RealtimePumpDetector realtimePumpDetector) {
+    public BinanceApplication(RealtimePumpDetector realtimePumpDetector, HistoricalPumpDetector historicalPumpDetector) {
         this.realtimePumpDetector = realtimePumpDetector;
+        this.historicalPumpDetector = historicalPumpDetector;
     }
 
     @Bean

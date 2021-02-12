@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -29,8 +30,11 @@ public class PumpInstantDetector {
     }
 
     public <T extends AggTrade> void detect(String symbol) {
-        storage.read(symbol)
-                .stream()
+        detect(symbol, storage.read(symbol));
+    }
+
+    public <T extends AggTrade> void detect(String symbol, List<T> trades) {
+        trades.stream()
                 .sorted(Comparator.comparingLong(AggTrade::getTradeTime))
                 .collect(
                         Collectors.groupingBy(
