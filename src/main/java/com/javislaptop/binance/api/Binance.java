@@ -13,6 +13,8 @@ import com.binance.api.client.domain.account.request.OrderStatusRequest;
 import com.binance.api.client.domain.general.ExchangeInfo;
 import com.binance.api.client.domain.market.*;
 import com.binance.api.client.exception.BinanceApiException;
+import com.javislaptop.binance.orderbook.domain.BinanceOrderBook;
+import com.javislaptop.binance.orderbook.domain.BinanceOrderBookEntry;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -23,6 +25,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static com.binance.api.client.domain.account.NewOrder.*;
 import static com.javislaptop.binance.Utils.calculateBenefit;
@@ -143,8 +146,14 @@ public class Binance {
         return binanceApiRestClient.getExchangeInfo();
     }
 
-    public OrderBook getOrderBook(String symbol, int limit) {
-        return binanceApiRestClient.getOrderBook(symbol, limit);
+    public BinanceOrderBook getOrderBook(String symbol, int limit) {
+        OrderBook orderBook = binanceApiRestClient.getOrderBook(symbol, limit);
+        return new BinanceOrderBook(
+                orderBook.getBids().parallelStream().map(bid -> new BinanceOrderBookEntry(new BigDecimal(bid.getPrice()), new BigDecimal(bid.getQty()))).collect(Collectors.toList()),
+                orderBook.getAsks().parallelStream().map(bid -> new BinanceOrderBookEntry(new BigDecimal(bid.getPrice()), new BigDecimal(bid.getQty()))).collect(Collectors.toList()),
+                Instant.now(Clock.systemUTC()),
+                orderBook.getLastUpdateId()
+        );
     }
 
     public BigDecimal getBuyPrice(String symbol) {
