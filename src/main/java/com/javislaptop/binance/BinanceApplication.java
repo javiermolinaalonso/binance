@@ -3,6 +3,7 @@ package com.javislaptop.binance;
 import com.javislaptop.binance.detector.HistoricalPumpDetector;
 import com.javislaptop.binance.detector.RealtimePumpDetector;
 import com.javislaptop.binance.pumper.PumpNDumper;
+import com.javislaptop.binance.ta.TechnicalAnalyzerService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -24,32 +25,38 @@ public class BinanceApplication {
     private final PumpNDumper pumpNDumper;
     private final RealtimePumpDetector realtimePumpDetector;
     private final HistoricalPumpDetector historicalPumpDetector;
-
-    public BinanceApplication(Scanner scanner, PumpNDumper pumpNDumper, RealtimePumpDetector realtimePumpDetector, HistoricalPumpDetector historicalPumpDetector) {
+    private final TechnicalAnalyzerService technicalAnalyzerService;
+    public BinanceApplication(Scanner scanner, PumpNDumper pumpNDumper, RealtimePumpDetector realtimePumpDetector, HistoricalPumpDetector historicalPumpDetector, TechnicalAnalyzerService technicalAnalyzerService) {
         this.scanner = scanner;
         this.pumpNDumper = pumpNDumper;
         this.realtimePumpDetector = realtimePumpDetector;
         this.historicalPumpDetector = historicalPumpDetector;
+        this.technicalAnalyzerService = technicalAnalyzerService;
     }
 
     @Bean
     public CommandLineRunner commandLineRunner(ApplicationContext ctx) {
         return args -> {
             try {
-            System.out.println("1. Manual pump");
-            System.out.println("2. Automated pump");
-            System.out.println("9. quit");
-            String option = scanner.nextLine();
-            if (option.equals("1")) {
-                pumpNDumper.execute();
-            } else if (option.equals("2")) {
-                realtimePumpDetector.enablePumpDetection();
-            }
-            } catch (Exception e ){
-                e.printStackTrace();
-            } finally {
-                System.exit(0);
-            }
+                System.out.println("1. Manual pump");
+                System.out.println("2. Automated pump");
+                System.out.println("5. Chart Analysis");
+                System.out.println("9. quit");
+//                String option = scanner.nextLine();
+                String option = "5";
+                if (option.equals("1")) {
+                    pumpNDumper.execute();
+                } else if (option.equals("2")) {
+                    realtimePumpDetector.enablePumpDetection();
+                } else if (option.equals("5")) {
+
+                    technicalAnalyzerService.execute("BNBBTC");
+                }
+                } catch (Exception e ){
+                    e.printStackTrace();
+                } finally {
+                    System.exit(0);
+                }
         };
     }
 
