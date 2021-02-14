@@ -40,14 +40,13 @@ public class CoinPairAnalyzer {
         //P.ej Comprar MATICBTC y vender BTCBNB
 
         BigDecimal amountOfBtc = new BigDecimal(1);
-        BigDecimal buyPriceMaticBtc = binance.getBuyPrice("MATICBTC"); //Aqui tengo MATIC
+        BigDecimal buyPriceMaticBtc = binance.getSellPrice("PHBBTC");
         BigDecimal amountOfMatic = amountOfBtc.divide(buyPriceMaticBtc, 0, RoundingMode.DOWN);
-        BigDecimal sellPriceMaticBnb = binance.getSellPrice("MATICBNB"); //Aqui tengo BNB
+        BigDecimal sellPriceMaticBnb = binance.getBuyPrice("PHBTUSD");
         BigDecimal amountOfBnb = amountOfMatic.multiply(sellPriceMaticBnb);
-        BigDecimal orderBookBtcBnb = binance.getSellPrice("BNBBTC"); //Vuelvo a tener BTC
-        BigDecimal amountOfBtcAfterTrades = amountOfBnb.multiply(orderBookBtcBnb);
-        BigDecimal result = buyPriceMaticBtc.multiply(sellPriceMaticBnb).multiply(orderBookBtcBnb);
-        System.out.println(result);
+        BigDecimal orderBookBtcBnb = binance.getSellPrice("BTCTUSD");
+        BigDecimal amountOfBtcAfterTrades = amountOfBnb.divide(orderBookBtcBnb, 8, RoundingMode.DOWN);
+        System.out.println(amountOfBtcAfterTrades);
     }
 
     private void initializeArbitrageMap() {

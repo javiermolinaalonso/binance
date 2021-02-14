@@ -99,7 +99,7 @@ public class PumpNDumper {
 
 
     private String getSymbol(String ticker) {
-        String symbol = ticker.toUpperCase() + "USDT";
+        String symbol = ticker.toUpperCase() + "BTC";
         System.out.println("Purchasing " + symbol);
         return symbol;
     }
@@ -143,9 +143,9 @@ public class PumpNDumper {
         }
     }
     private BigDecimal getAmount() {
-        String assetBalance = binance.getAssetBalance("USDT");
+        String assetBalance = binance.getAssetBalance("BTC");
         BigDecimal result = readAmount(assetBalance);
-        System.out.println(String.format("You will bet %s USDT", result.toPlainString()));
+        System.out.println(String.format("You will bet %s BTC", result.toPlainString()));
 
         String bnbBalance = binance.getAssetBalance("BNB");
         System.out.println(String.format("You have %s BNB, please make sure you have enough BNB to pay the fees. Keep at least 1 percent", bnbBalance));
