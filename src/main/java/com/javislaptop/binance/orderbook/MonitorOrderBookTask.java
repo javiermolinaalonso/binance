@@ -1,15 +1,18 @@
 package com.javislaptop.binance.orderbook;
 
+import com.binance.api.client.domain.OrderStatus;
+import com.binance.api.client.domain.account.Order;
+import com.binance.api.client.domain.account.Trade;
 import com.binance.api.client.domain.event.BookTickerEvent;
-import com.binance.api.client.domain.general.SymbolInfo;
 import com.javislaptop.binance.api.Binance;
-import com.javislaptop.binance.api.domain.OcoOrder;
 import com.javislaptop.binance.api.stream.BinanceDataStreamer;
 import com.javislaptop.binance.api.stream.storage.StreamDataStorage;
+import com.javislaptop.binance.orderbook.domain.BinanceOrderBook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -18,41 +21,52 @@ public class MonitorOrderBookTask extends TimerTask {
 
     private static final Logger logger = LoggerFactory.getLogger(MonitorOrderBookTask.class);
 
-    private final OcoOrder ocoOrder;
+    private final Order order;
     private final StreamDataStorage storage;
-    private final SymbolInfo symbolInfo;
+    private final String symbol;
     private final Binance binance;
     private final BinanceDataStreamer streamer;
 
     private boolean purchased = false;
 
 
-    public MonitorOrderBookTask(OcoOrder ocoOrder, StreamDataStorage storage, SymbolInfo symbolInfo, Binance binance, BinanceDataStreamer streamer) {
-        this.ocoOrder = ocoOrder;
+    public MonitorOrderBookTask(Order order, StreamDataStorage storage, String symbolInfo, Binance binance, BinanceDataStreamer streamer) {
+        this.order = order;
         this.storage = storage;
-        this.symbolInfo = symbolInfo;
+        this.symbol = symbolInfo;
         this.binance = binance;
         this.streamer = streamer;
-        streamer.enableBookTickerEvents(symbolInfo.getSymbol());
+        streamer.enableBookTickerEvents(symbolInfo);
     }
 
     @Override
     public void run() {
-        Optional<BookTickerEvent> bookTickerEvent = storage.readBookTickerEvent(symbolInfo.getSymbol());
-        bookTickerEvent.ifPresent(ticker -> {
+        Optional<BinanceOrderBook> orderBook = storage.getDepth(symbol);
+        orderBook.ifPresent(ticker -> {
+            List<Order> openOrders = binance.getOpenOrders(symbol);
+            Optional<Order> openOrder = openOrders.stream()
+                    .filter(o -> o.getStatus() != OrderStatus.FILLED)
+                    .findAny();
+            openOrder.ifPresent();
+            purchaseOrder.ifPresent(o -> {
+                o.get
+            });
+            if (purchaseOrder.isPresent()) {
+                if ()
+            }
             if (!purchased) {
-                if (new BigDecimal(ticker.getAskPrice()).compareTo(ocoOrder.getBuyPrice()) <= 0) {
-                    logger.info("Purchased {} at {}", ticker.getSymbol(), ocoOrder.getBuyPrice());
+                if (new BigDecimal(ticker.getAskPrice()).compareTo(order.getBuyPrice()) <= 0) {
+                    logger.info("Purchased {} at {}", ticker.getSymbol(), order.getBuyPrice());
                     purchased = true;
                 }
             } else {
-                if (new BigDecimal(ticker.getBidPrice()).compareTo(ocoOrder.getProfitPrice()) >= 0) {
-                    logger.info("Sold {} at {}", ticker.getSymbol(), ocoOrder.getProfitPrice());
-                    logger.info("BENEFIT: {}", ocoOrder.getProfitPercent());
+                if (new BigDecimal(ticker.getBidPrice()).compareTo(order.getProfitPrice()) >= 0) {
+                    logger.info("Sold {} at {}", ticker.getSymbol(), order.getProfitPrice());
+                    logger.info("BENEFIT: {}", order.getProfitPercent());
                     this.cancel();
-                } else if (new BigDecimal(ticker.getAskPrice()).compareTo(ocoOrder.getLossPrice())<=0) {
-                    logger.info("Sold {} at {}", ticker.getSymbol(), ocoOrder.getLossPrice());
-                    logger.info("LOSS: {}", ocoOrder.getLossPercent());
+                } else if (new BigDecimal(ticker.getAskPrice()).compareTo(order.getLossPrice())<=0) {
+                    logger.info("Sold {} at {}", ticker.getSymbol(), order.getLossPrice());
+                    logger.info("LOSS: {}", order.getLossPercent());
                     this.cancel();
                 }
             }
@@ -61,8 +75,8 @@ public class MonitorOrderBookTask extends TimerTask {
 
     @Override
     public boolean cancel() {
-        TimerTask placeOrderTask = new PlaceOrderTask(binance, symbolInfo, storage, streamer);
-        new Timer("update-task-"+symbolInfo.getSymbol()).schedule(placeOrderTask, 100, 1000);
+        TimerTask placeOrderTask = new PlaceOrderTask(binance, symbol, storage, streamer);
+        new Timer("update-task-"+ symbol).schedule(placeOrderTask, 100, 1000);
         return super.cancel();
     }
 }

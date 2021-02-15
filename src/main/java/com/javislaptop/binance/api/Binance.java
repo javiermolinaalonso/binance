@@ -9,8 +9,10 @@ import com.binance.api.client.domain.account.Order;
 import com.binance.api.client.domain.account.Trade;
 import com.binance.api.client.domain.account.request.CancelOrderRequest;
 import com.binance.api.client.domain.account.request.CancelOrderResponse;
+import com.binance.api.client.domain.account.request.OrderRequest;
 import com.binance.api.client.domain.account.request.OrderStatusRequest;
 import com.binance.api.client.domain.general.ExchangeInfo;
+import com.binance.api.client.domain.general.SymbolInfo;
 import com.binance.api.client.domain.market.*;
 import com.binance.api.client.exception.BinanceApiException;
 import com.javislaptop.binance.orderbook.domain.BinanceOrderBook;
@@ -88,11 +90,9 @@ public class Binance {
         return getOrder(symbol, newOrderResponse.getOrderId());
     }
 
-    public void testBuyMarket(String symbol, BigDecimal quantity) {
-        String amountStr = formatter.formatPrice(symbol, quantity);
-        binanceApiRestClient.newOrderTest(marketBuy(symbol, amountStr).newOrderRespType(NewOrderResponseType.FULL));
+    public List<Order> getOpenOrders(String symbol) {
+        return binanceApiRestClient.getOpenOrders(new OrderRequest(symbol));
     }
-
     private Order getOrder(String symbol, Long orderId) {
         OrderStatusRequest orderStatusRequest = new OrderStatusRequest(symbol, orderId);
         int count = 0;
@@ -117,16 +117,6 @@ public class Binance {
         return order;
     }
 
-    public void testSellLimit(String symbol, BigDecimal price) {
-        String quantity = formatter.formatAmount(symbol, new BigDecimal(getAssetBalance(symbol)));
-        binanceApiRestClient.newOrderTest(limitSell(symbol, TimeInForce.GTC, quantity, formatter.formatPrice(symbol, price)).newOrderRespType(NewOrderResponseType.FULL));
-    }
-
-    public void testSellMarket(String symbol) {
-        String quantity = formatter.formatAmount(symbol, new BigDecimal(getAssetBalance(symbol)));
-        binanceApiRestClient.newOrderTest(marketSell(symbol, quantity).newOrderRespType(NewOrderResponseType.FULL));
-    }
-
     public CancelOrderResponse cancelOrder(String symbol, Long orderId) {
         return binanceApiRestClient.cancelOrder(new CancelOrderRequest(symbol, orderId));
     }
@@ -144,6 +134,11 @@ public class Binance {
 
     public ExchangeInfo getExchangeInfo() {
         return binanceApiRestClient.getExchangeInfo();
+    }
+
+    public SymbolInfo getSymbolInfo(String symbol) {
+        return binanceApiRestClient.getExchangeInfo()
+                .getSymbolInfo(symbol);
     }
 
     public BinanceOrderBook getOrderBook(String symbol, int limit) {

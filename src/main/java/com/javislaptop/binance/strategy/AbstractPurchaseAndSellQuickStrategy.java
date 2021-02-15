@@ -49,7 +49,7 @@ public abstract class AbstractPurchaseAndSellQuickStrategy implements TradeStrat
 
             @Override
             public void run() {
-               Optional<BookTickerEvent> bookTickerEvent = storage.readBookTickerEvent(symbol);
+               Optional<BookTickerEvent> bookTickerEvent = storage.getDepth(symbol);
                bookTickerEvent.ifPresent(book -> {
                     BigDecimal bidPrice = new BigDecimal(book.getBidPrice());
                     BigDecimal benefitPercent = calculateBenefit(buyPrice, bidPrice);

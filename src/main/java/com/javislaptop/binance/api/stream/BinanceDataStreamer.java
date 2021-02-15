@@ -1,7 +1,9 @@
 package com.javislaptop.binance.api.stream;
 
+import com.binance.api.client.BinanceApiCallback;
 import com.binance.api.client.BinanceApiWebSocketClient;
-import org.apache.logging.log4j.LogManager;
+import com.binance.api.client.domain.account.Order;
+import com.binance.api.client.domain.event.UserDataUpdateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -70,7 +72,7 @@ public class BinanceDataStreamer {
     }
 
     private void enableBookTicker(String symbol) {
-        activeBookTickerEvents.put(symbol, binanceWebsocket.onBookTickerEvent(symbol.toLowerCase(), bookTickerEventCallback));
+        activeBookTickerEvents.put(symbol, binanceWebsocket.onDepthEvent(symbol.toLowerCase(), bookTickerEventCallback));
     }
 
     private void enableAggTrades(String symbol) {
