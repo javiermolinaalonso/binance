@@ -78,7 +78,8 @@ public class PumpNDumper {
             Optional<BigDecimal> averagePrice = binance.getAveragePrice(symbol);
             if (averagePrice.isPresent()) {
                 BigDecimal buyPrice = buyLimit.get().multiply(averagePrice.get());
-                buyResponse = binance.buyLimit(symbol, btcAmount, buyPrice);
+                NewOrderResponse newOrderResponse = binance.buyLimit(symbol, btcAmount, buyPrice);
+                buyResponse = binance.getOrder(symbol, newOrderResponse.getOrderId());
             }
         } else {
             buyResponse = binance.buyMarket(symbol, btcAmount);

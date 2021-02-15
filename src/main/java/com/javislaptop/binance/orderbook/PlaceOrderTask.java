@@ -1,10 +1,10 @@
 package com.javislaptop.binance.orderbook;
 
+import com.binance.api.client.domain.account.NewOrderResponse;
 import com.binance.api.client.domain.account.Order;
 import com.binance.api.client.domain.general.FilterType;
 import com.binance.api.client.domain.general.SymbolInfo;
 import com.javislaptop.binance.api.Binance;
-import com.javislaptop.binance.api.domain.OcoOrder;
 import com.javislaptop.binance.api.stream.BinanceDataStreamer;
 import com.javislaptop.binance.api.stream.storage.StreamDataStorage;
 import com.javislaptop.binance.orderbook.domain.BinanceOrderBook;
@@ -49,7 +49,7 @@ public class PlaceOrderTask extends TimerTask {
                 .ifPresent(s -> {
                     Order order = placeLimitOrder(binance.getSymbolInfo(symbol), orderBook.findFloor(RESISTANCE_THRESHOLD).get());
 
-                    MonitorOrderBookTask monitorOrderBookTask = new MonitorOrderBookTask(order, storage, symbol, binance, streamer);
+                    MonitorOrderBookTask monitorOrderBookTask = new MonitorOrderBookTask(storage, symbol, binance, streamer);
                     new Timer("monitorbook-task-"+ symbol).schedule(monitorOrderBookTask, 100, 1000);
                     this.cancel();
                 });
@@ -58,6 +58,7 @@ public class PlaceOrderTask extends TimerTask {
     private Order placeLimitOrder(SymbolInfo s, BinanceOrderBookEntry floor) {
         BigDecimal price = floor.getPrice().add(new BigDecimal(s.getSymbolFilter(FilterType.PRICE_FILTER).getTickSize()));
         logger.info("Placing limit order for {} at price {}.", s.getSymbol(), price);
-        return binance.buyLimit(s.getSymbol(), BTC_PER_TRADE, price);
+        NewOrderResponse newOrderResponse = binance.buyLimit(s.getSymbol(), BTC_PER_TRADE, price);
+        return binance.getOrder(symbol, newOrderResponse.getOrderId());
     }
 }

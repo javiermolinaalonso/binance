@@ -1,6 +1,7 @@
 package com.javislaptop.binance.strategy;
 
 import com.binance.api.client.domain.OrderStatus;
+import com.binance.api.client.domain.account.NewOrderResponse;
 import com.binance.api.client.domain.account.Order;
 import com.javislaptop.binance.api.Binance;
 import com.javislaptop.binance.api.stream.BinanceDataStreamer;
@@ -39,7 +40,8 @@ public class PurchaseAndSellQuickStrategyReal extends AbstractPurchaseAndSellQui
     @Override
     protected void purchase(String symbol) {
         buyPrice = binance.getBuyPrice(symbol);
-        buyOrder = binance.buyLimit(symbol, new BigDecimal(properties.getPurchaseAmount()), buyPrice);
+        NewOrderResponse newOrderResponse = binance.buyLimit(symbol, new BigDecimal(properties.getPurchaseAmount()), buyPrice);
+        buyOrder = binance.getOrder(symbol, newOrderResponse.getOrderId());
         logger.info(String.format("[%s] Buy %s at %s", Instant.now(Clock.systemUTC()).truncatedTo(ChronoUnit.SECONDS), symbol, buyPrice));
         if (buyOrder.getStatus() == OrderStatus.FILLED) {
             BigDecimal sellLimit = new BigDecimal(buyOrder.getPrice()).multiply(new BigDecimal(properties.getBenefitPercent()));

@@ -17,6 +17,8 @@ import com.binance.api.client.domain.market.*;
 import com.binance.api.client.exception.BinanceApiException;
 import com.javislaptop.binance.orderbook.domain.BinanceOrderBook;
 import com.javislaptop.binance.orderbook.domain.BinanceOrderBookEntry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -35,6 +37,8 @@ import static java.util.Optional.empty;
 
 @Service
 public class Binance {
+
+    private static final Logger logger = LoggerFactory.getLogger(Binance.class);
 
     private final BinanceApiRestClient binanceApiRestClient;
     private final BinanceFormatter formatter;
@@ -62,24 +66,23 @@ public class Binance {
         return binanceApiRestClient.getMyTrades(symbol).stream().filter(t -> t.getOrderId().equals(String.valueOf(orderId))).findAny();
     }
 
-    public Order buyLimit(String symbol, BigDecimal amount, BigDecimal priceLimit) {
+    public NewOrderResponse buyLimit(String symbol, BigDecimal amount, BigDecimal priceLimit) {
         String priceStr = formatter.formatPrice(symbol, priceLimit);
         String amountStr = formatter.formatAmount(symbol, amount.divide(priceLimit, 8, RoundingMode.DOWN));
-        System.out.println(String.format("Placing limit order for %s. Amount %s at price %s", symbol, amountStr, priceStr));
-        Long orderId = binanceApiRestClient.newOrder(limitBuy(symbol, TimeInForce.GTC, amountStr, priceStr).newOrderRespType(NewOrderResponseType.FULL)).getOrderId();
-
-        return getOrder(symbol, orderId);
+        logger.info("Placing limit order for {}. Amount {} at price {}", symbol, amountStr, priceStr);
+        return binanceApiRestClient.newOrder(limitBuy(symbol, TimeInForce.GTC, amountStr, priceStr).newOrderRespType(NewOrderResponseType.FULL));
     }
 
     public Order buyMarket(String symbol, BigDecimal amount) {
         String amountStr = formatter.formatPrice(symbol, amount);
+        logger.info("Placing buy market order for {}. Amount {}", symbol, amountStr);
         NewOrderResponse newOrderResponse = binanceApiRestClient.newOrder(marketBuy(symbol, null).quoteOrderQty(amountStr).newOrderRespType(NewOrderResponseType.FULL));
         return getOrder(symbol, newOrderResponse.getOrderId());
     }
 
     public Order sellLimit(String symbol, String amount, BigDecimal targetPrice) {
         String price = formatter.formatPrice(symbol, targetPrice);
-        System.out.println(String.format("Selling %s at target price %s", symbol, targetPrice));
+        logger.info("Placing sell limit order for {}. Amount {} at target price {}", symbol, amount, targetPrice);
         NewOrderResponse newOrderResponse = binanceApiRestClient.newOrder(limitSell(symbol, TimeInForce.GTC, amount, price));
         return getOrder(symbol, newOrderResponse.getOrderId());
     }
@@ -93,7 +96,8 @@ public class Binance {
     public List<Order> getOpenOrders(String symbol) {
         return binanceApiRestClient.getOpenOrders(new OrderRequest(symbol));
     }
-    private Order getOrder(String symbol, Long orderId) {
+
+    public Order getOrder(String symbol, Long orderId) {
         OrderStatusRequest orderStatusRequest = new OrderStatusRequest(symbol, orderId);
         int count = 0;
         Order order = null;
@@ -118,6 +122,7 @@ public class Binance {
     }
 
     public CancelOrderResponse cancelOrder(String symbol, Long orderId) {
+        logger.info("Cancelling order for {} with id {}", symbol, orderId);
         return binanceApiRestClient.cancelOrder(new CancelOrderRequest(symbol, orderId));
     }
 
