@@ -51,7 +51,7 @@ public class PurchaseAndSellQuickStrategyReal extends AbstractPurchaseAndSellQui
 
     @Override
     protected void sell(String symbol, BigDecimal bidPrice) {
-        Order order = binance.sellLimit(symbol, buyOrder.getExecutedQty(), bidPrice);
+        NewOrderResponse order = binance.sellLimit(symbol, buyOrder.getExecutedQty(), bidPrice);
         sellPrice = new BigDecimal(order.getPrice());
         sellToMarket(symbol, order);
     }
@@ -59,14 +59,14 @@ public class PurchaseAndSellQuickStrategyReal extends AbstractPurchaseAndSellQui
     @Override
     protected void sell(String symbol) {
         BigDecimal sellPrice = binance.getSellPrice(symbol);
-        Order order = binance.sellLimit(symbol, buyOrder.getExecutedQty(), sellPrice);
+        NewOrderResponse order = binance.sellLimit(symbol, buyOrder.getExecutedQty(), sellPrice);
         this.sellPrice = new BigDecimal(order.getPrice());
         sellToMarket(symbol, order);
     }
 
-    private void sellToMarket(String symbol, Order order) {
+    private void sellToMarket(String symbol, NewOrderResponse order) {
         if (order.getStatus() != OrderStatus.FILLED) {
-            binance.cancelOrder(symbol, order.getOrderId());
+            binance.cancelOrder(symbol, order.getOrderId(), null);
             binance.sellMarket(symbol, new BigDecimal(buyOrder.getExecutedQty()));
         }
     }

@@ -55,7 +55,7 @@ public class BinanceApplication {
             } else if(option.equals("3")) {
                 coinPairAnalyzer.execute();
             } else if (option.equals("4")) {
-                orderBookTrader.execute("THETABTC");
+                orderBookTrader.execute("DASHBTC");
             }
             } catch (Exception e ){
                 e.printStackTrace();

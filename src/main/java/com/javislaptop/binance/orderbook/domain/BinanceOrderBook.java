@@ -36,17 +36,17 @@ public class BinanceOrderBook {
         return lastUpdateId;
     }
 
-    public Optional<BinanceOrderBookEntry> findFloor(BigDecimal threshold) {
+    public Optional<BinanceOrderBookEntry> getFloor(BigDecimal threshold) {
         return findStepGreaterThan(bids, threshold);
     }
 
-    public Optional<BinanceOrderBookEntry> findResistance(BigDecimal threshold) {
+    public Optional<BinanceOrderBookEntry> getResistance(BigDecimal threshold) {
         return findStepGreaterThan(asks, threshold);
     }
 
     public Optional<BigDecimal> getDistanceBetweenFloorAndResistance(BigDecimal threshold) {
-        Optional<BinanceOrderBookEntry> floor = findFloor(threshold);
-        Optional<BinanceOrderBookEntry> resistance = findResistance(threshold);
+        Optional<BinanceOrderBookEntry> floor = getFloor(threshold);
+        Optional<BinanceOrderBookEntry> resistance = getResistance(threshold);
         if (floor.isEmpty() || resistance.isEmpty()) {
             return Optional.empty();
         }

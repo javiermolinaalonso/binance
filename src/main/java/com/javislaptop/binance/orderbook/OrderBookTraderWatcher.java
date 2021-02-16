@@ -28,7 +28,7 @@ public class OrderBookTraderWatcher {
 
     public void watch(String symbolInfo) {
         TimerTask placeOrderTask = new MonitorOrderBookTask(storage, symbolInfo, binance, streamer);
-        new Timer("monitor-orderbook-"+symbolInfo).schedule(placeOrderTask, 100, 5000);
+        new Timer("monitor-orderbook-"+symbolInfo).schedule(placeOrderTask, 100, 15000);
     }
 
 

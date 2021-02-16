@@ -19,12 +19,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.stream.Collectors;
 
 public class MonitorOrderBookTask extends TimerTask {
 
     private static final Logger logger = LoggerFactory.getLogger(MonitorOrderBookTask.class);
     private static final BigDecimal RESISTANCE_THRESHOLD = new BigDecimal("0.05");
-    private static final BigDecimal FLOOR_THRESHOLD = new BigDecimal("0.05");
     private static final BigDecimal MAX_DISTANCE_TO_RESISTANCE = new BigDecimal("0.001");
     private static final BigDecimal MIN_GAP = new BigDecimal("0.005");
     private static final BigDecimal MAX_GAP = new BigDecimal("0.05");
@@ -49,21 +49,30 @@ public class MonitorOrderBookTask extends TimerTask {
     @Override
     public void run() {
         try {
+//            List<Order> openOrders = binance.getAccountOrders(symbol)
+//                    .stream()
+//                    .filter(o -> o.getStatus() != OrderStatus.CANCELED)
+//                    .filter(o -> o.getStatus() != OrderStatus.EXPIRED)
+//                    .filter(o -> o.getStatus() != OrderStatus.REJECTED)
+//                    .filter(o -> o.getStatus() != OrderStatus.FILLED)
+//                    .collect(Collectors.toList());
             List<Order> openOrders = binance.getOpenOrders(symbol);
-            BinanceOrderBook book = binance.getOrderBook(symbol, 500);
+            BinanceOrderBook book = binance.getOrderBook(symbol, 50);
 
-            Optional<BinanceOrderBookEntry> floor = book.findFloor(FLOOR_THRESHOLD);
+            Optional<BinanceOrderBookEntry> floor = book.getFloor(RESISTANCE_THRESHOLD); //TODO detect floor and resistance grouping by units
             if (openOrders.size() > 1) {
-                logger.warn("For some reason there is more than one open order, cancelling all of them");
-                openOrders.forEach(o -> binance.cancelOrder(symbol, o.getOrderId()));
+                logger.warn("For some reason there is more than one open order, cancelling all of them which are buy");
+                openOrders.stream().filter(o -> o.getSide() == OrderSide.BUY).forEach(o -> binance.cancelOrder(symbol, o.getOrderId(), null));
             }
+
             if (openOrders.isEmpty()) {
                 book.getDistanceBetweenFloorAndResistance(RESISTANCE_THRESHOLD)
                         .filter(d -> d.compareTo(MIN_GAP) > 0)
                         .filter(d -> d.compareTo(MAX_GAP) < 0)
-                        .ifPresent(s -> {
+                        .ifPresentOrElse(s -> {
                             binance.buyLimit(symbol, BTC_PER_TRADE, floor.map(BinanceOrderBookEntry::getPrice).get().add(new BigDecimal(symbolInfo.getSymbolFilter(FilterType.PRICE_FILTER).getTickSize())));
-                        });
+                        },
+                                () -> logger.info("There is no floor or the distance is too small or too high.")); //TODO improve this logic to add purchase in case there is a clear floor
             } else {
                 Optional<Order> openBuyOrder = openOrders.stream()
                         .filter(o -> o.getStatus() != OrderStatus.FILLED)
@@ -77,12 +86,12 @@ public class MonitorOrderBookTask extends TimerTask {
                                 if (orderPrice.compareTo(floorPrice) < 0) {
                                     //There is a new floor before our purchase price
                                     logger.info("There is a new floor before our price. Moving limit order");
-                                    binance.cancelOrder(symbol, o.getOrderId());
+                                    binance.cancelOrder(o);
                                     binance.buyLimit(symbol, BTC_PER_TRADE, floorPrice.add(new BigDecimal(symbolInfo.getSymbolFilter(FilterType.PRICE_FILTER).getTickSize())));
                                 } else {
                                     if (orderPrice.subtract(floorPrice).divide(floorPrice, 8, RoundingMode.DOWN).compareTo(MAX_DISTANCE_TO_RESISTANCE) > 0) {
                                         logger.info("The floor has gone too low. Moving limit order");
-                                        binance.cancelOrder(symbol, o.getOrderId());
+                                        binance.cancelOrder(o);
                                         binance.buyLimit(symbol, BTC_PER_TRADE, floorPrice.add(new BigDecimal(symbolInfo.getSymbolFilter(FilterType.PRICE_FILTER).getTickSize())));
                                     } else {
                                         logger.info("Order book didn't change");
@@ -91,7 +100,7 @@ public class MonitorOrderBookTask extends TimerTask {
                             },
                             () -> {
                                 logger.info("The floor has gone, cancelling order");
-                                binance.cancelOrder(symbol, o.getOrderId()); //The resistance has gone
+                                binance.cancelOrder(o); //The resistance has gone
                             }
                     );
                 });
@@ -101,18 +110,18 @@ public class MonitorOrderBookTask extends TimerTask {
                         .findAny();
                 openSellOrder.ifPresent(
                         o -> {
-                            book.findResistance(RESISTANCE_THRESHOLD).ifPresent(
+                            book.getResistance(RESISTANCE_THRESHOLD).ifPresent(
                                     resistance -> {
                                         BigDecimal resistancePrice = resistance.getPrice();
                                         BigDecimal orderPrice = new BigDecimal(o.getPrice());
                                         if (resistancePrice.compareTo(orderPrice) < 0) {
                                             //The resistance has gone beyond our price
-                                            binance.cancelOrder(symbol, o.getOrderId());
+                                            binance.cancelOrder(o);
                                             binance.sellLimit(symbol, o.getOrigQty(), resistancePrice.subtract(new BigDecimal(symbolInfo.getSymbolFilter(FilterType.PRICE_FILTER).getTickSize())));
                                         } else {
                                             if (resistancePrice.subtract(orderPrice).divide(orderPrice, 8, RoundingMode.DOWN).compareTo(MAX_DISTANCE_TO_RESISTANCE) > 0) {
                                                 //The resistance has gone too far
-                                                binance.cancelOrder(symbol, o.getOrderId());
+                                                binance.cancelOrder(o);
                                                 binance.sellLimit(symbol, o.getOrigQty(), resistancePrice.subtract(new BigDecimal(symbolInfo.getSymbolFilter(FilterType.PRICE_FILTER).getTickSize())));
                                             }
                                         }

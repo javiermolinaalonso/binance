@@ -47,7 +47,7 @@ public class PlaceOrderTask extends TimerTask {
                 .filter(d -> d.compareTo(MIN_GAP) > 0)
                 .filter(d -> d.compareTo(MAX_GAP) < 0)
                 .ifPresent(s -> {
-                    Order order = placeLimitOrder(binance.getSymbolInfo(symbol), orderBook.findFloor(RESISTANCE_THRESHOLD).get());
+                    Order order = placeLimitOrder(binance.getSymbolInfo(symbol), orderBook.getFloor(RESISTANCE_THRESHOLD).get());
 
                     MonitorOrderBookTask monitorOrderBookTask = new MonitorOrderBookTask(storage, symbol, binance, streamer);
                     new Timer("monitorbook-task-"+ symbol).schedule(monitorOrderBookTask, 100, 1000);
