@@ -150,6 +150,9 @@ public class Binance {
         return binanceApiRestClient.getAccount().getAssetBalance(asset).getFree();
     }
 
+    public Account getAccount() {
+        return binanceApiRestClient.getAccount();
+    }
     public void printPrices(String symbol, String purchasePricestr) {
         BigDecimal price = getBuyPrice(symbol);
         BigDecimal purchasePrice = new BigDecimal(purchasePricestr);
@@ -216,5 +219,9 @@ public class Binance {
 
     public CancelOrderResponse cancelOrder(Order order) {
         return cancelOrder(order.getSymbol(), order.getOrderId(), order.getClientOrderId());
+    }
+
+    public List<Order> getOpenOrders() {
+        return getOpenOrders(null);
     }
 }

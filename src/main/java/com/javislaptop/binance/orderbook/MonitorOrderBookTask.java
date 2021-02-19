@@ -1,134 +1,96 @@
 package com.javislaptop.binance.orderbook;
 
 import com.binance.api.client.domain.OrderSide;
-import com.binance.api.client.domain.OrderStatus;
+import com.binance.api.client.domain.account.AssetBalance;
 import com.binance.api.client.domain.account.Order;
 import com.binance.api.client.domain.general.FilterType;
 import com.binance.api.client.domain.general.SymbolInfo;
+import com.javislaptop.binance.api.AccountService;
 import com.javislaptop.binance.api.Binance;
-import com.javislaptop.binance.api.stream.BinanceDataStreamer;
-import com.javislaptop.binance.api.stream.storage.StreamDataStorage;
 import com.javislaptop.binance.orderbook.domain.BinanceOrderBook;
-import com.javislaptop.binance.orderbook.domain.BinanceOrderBookEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.List;
 import java.util.Optional;
-import java.util.Timer;
 import java.util.TimerTask;
-import java.util.stream.Collectors;
 
 public class MonitorOrderBookTask extends TimerTask {
 
     private static final Logger logger = LoggerFactory.getLogger(MonitorOrderBookTask.class);
-    private static final BigDecimal RESISTANCE_THRESHOLD = new BigDecimal("0.05");
-    private static final BigDecimal MAX_DISTANCE_TO_RESISTANCE = new BigDecimal("0.001");
     private static final BigDecimal MIN_GAP = new BigDecimal("0.005");
-    private static final BigDecimal MAX_GAP = new BigDecimal("0.05");
     private static final BigDecimal BTC_PER_TRADE = new BigDecimal("0.0005");
 
-    private final StreamDataStorage storage;
+    private final AccountService accountService;
     private final String symbol;
     private final Binance binance;
-    private final BinanceDataStreamer streamer;
     private final SymbolInfo symbolInfo;
+    private final BigDecimal stepSize;
+    private final String coin;
 
-
-    public MonitorOrderBookTask(StreamDataStorage storage, String symbolInfo, Binance binance, BinanceDataStreamer streamer) {
-        this.storage = storage;
-        this.symbol = symbolInfo;
+    public MonitorOrderBookTask(AccountService accountService, SymbolInfo symbolInfo, Binance binance) {
+        this.accountService = accountService;
+        this.symbol = symbolInfo.getSymbol();
         this.binance = binance;
-        this.streamer = streamer;
-        this.symbolInfo = binance.getSymbolInfo(symbol);
-        streamer.enableBookTickerEvents(symbolInfo);
+        this.symbolInfo = symbolInfo;
+        this.stepSize = new BigDecimal(this.symbolInfo.getSymbolFilter(FilterType.PRICE_FILTER).getTickSize());
+        this.coin = symbol.replaceAll("BTC", "");
     }
 
     @Override
     public void run() {
         try {
-//            List<Order> openOrders = binance.getAccountOrders(symbol)
-//                    .stream()
-//                    .filter(o -> o.getStatus() != OrderStatus.CANCELED)
-//                    .filter(o -> o.getStatus() != OrderStatus.EXPIRED)
-//                    .filter(o -> o.getStatus() != OrderStatus.REJECTED)
-//                    .filter(o -> o.getStatus() != OrderStatus.FILLED)
-//                    .collect(Collectors.toList());
-            List<Order> openOrders = binance.getOpenOrders(symbol);
-            BinanceOrderBook book = binance.getOrderBook(symbol, 50);
+            AssetBalance assetBalance = accountService.getAccount().getAssetBalance(coin);
+            BinanceOrderBook book = binance.getOrderBook(symbol, 5);
 
-            Optional<BinanceOrderBookEntry> floor = book.getFloor(RESISTANCE_THRESHOLD); //TODO detect floor and resistance grouping by units
-            if (openOrders.size() > 1) {
-                logger.warn("For some reason there is more than one open order, cancelling all of them which are buy");
-                openOrders.stream().filter(o -> o.getSide() == OrderSide.BUY).forEach(o -> binance.cancelOrder(symbol, o.getOrderId(), null));
-            }
-
-            if (openOrders.isEmpty()) {
-                book.getDistanceBetweenFloorAndResistance(RESISTANCE_THRESHOLD)
-                        .filter(d -> d.compareTo(MIN_GAP) > 0)
-                        .filter(d -> d.compareTo(MAX_GAP) < 0)
-                        .ifPresentOrElse(s -> {
-                            binance.buyLimit(symbol, BTC_PER_TRADE, floor.map(BinanceOrderBookEntry::getPrice).get().add(new BigDecimal(symbolInfo.getSymbolFilter(FilterType.PRICE_FILTER).getTickSize())));
-                        },
-                                () -> logger.info("There is no floor or the distance is too small or too high.")); //TODO improve this logic to add purchase in case there is a clear floor
+            BigDecimal askPrice = book.getAsk();
+            if (new BigDecimal(assetBalance.getFree()).compareTo(BigDecimal.ZERO) > 0) {
+                //An execution has happened, require to sell
+                binance.sellLimit(symbol, assetBalance.getFree(), askPrice);
             } else {
-                Optional<Order> openBuyOrder = openOrders.stream()
-                        .filter(o -> o.getStatus() != OrderStatus.FILLED)
-                        .filter(o -> o.getSide() == OrderSide.BUY)
-                        .findAny();
-                openBuyOrder.ifPresent(o -> {
-                    floor.ifPresentOrElse(
-                            f -> {
-                                BigDecimal floorPrice = f.getPrice();
-                                BigDecimal orderPrice = new BigDecimal(o.getPrice());
-                                if (orderPrice.compareTo(floorPrice) < 0) {
-                                    //There is a new floor before our purchase price
-                                    logger.info("There is a new floor before our price. Moving limit order");
-                                    binance.cancelOrder(o);
-                                    binance.buyLimit(symbol, BTC_PER_TRADE, floorPrice.add(new BigDecimal(symbolInfo.getSymbolFilter(FilterType.PRICE_FILTER).getTickSize())));
-                                } else {
-                                    if (orderPrice.subtract(floorPrice).divide(floorPrice, 8, RoundingMode.DOWN).compareTo(MAX_DISTANCE_TO_RESISTANCE) > 0) {
-                                        logger.info("The floor has gone too low. Moving limit order");
-                                        binance.cancelOrder(o);
-                                        binance.buyLimit(symbol, BTC_PER_TRADE, floorPrice.add(new BigDecimal(symbolInfo.getSymbolFilter(FilterType.PRICE_FILTER).getTickSize())));
-                                    } else {
-                                        logger.info("Order book didn't change");
-                                    }
-                                }
-                            },
-                            () -> {
-                                logger.info("The floor has gone, cancelling order");
-                                binance.cancelOrder(o); //The resistance has gone
-                            }
-                    );
-                });
-                Optional<Order> openSellOrder = openOrders.stream()
-                        .filter(o -> o.getStatus() != OrderStatus.FILLED)
-                        .filter(o -> o.getSide() == OrderSide.SELL)
-                        .findAny();
-                openSellOrder.ifPresent(
-                        o -> {
-                            book.getResistance(RESISTANCE_THRESHOLD).ifPresent(
-                                    resistance -> {
-                                        BigDecimal resistancePrice = resistance.getPrice();
-                                        BigDecimal orderPrice = new BigDecimal(o.getPrice());
-                                        if (resistancePrice.compareTo(orderPrice) < 0) {
-                                            //The resistance has gone beyond our price
-                                            binance.cancelOrder(o);
-                                            binance.sellLimit(symbol, o.getOrigQty(), resistancePrice.subtract(new BigDecimal(symbolInfo.getSymbolFilter(FilterType.PRICE_FILTER).getTickSize())));
-                                        } else {
-                                            if (resistancePrice.subtract(orderPrice).divide(orderPrice, 8, RoundingMode.DOWN).compareTo(MAX_DISTANCE_TO_RESISTANCE) > 0) {
-                                                //The resistance has gone too far
-                                                binance.cancelOrder(o);
-                                                binance.sellLimit(symbol, o.getOrigQty(), resistancePrice.subtract(new BigDecimal(symbolInfo.getSymbolFilter(FilterType.PRICE_FILTER).getTickSize())));
-                                            }
-                                        }
-                                    }
-                            );
+                List<Order> openOrders = accountService.getOpenOrders(symbol);
+                if (new BigDecimal(assetBalance.getLocked()).compareTo(BigDecimal.ZERO) > 0) {
+                    //A sell order has been placed, require to update?
+                    Optional<Order> sellOrder = openOrders.stream().filter(o -> o.getSide() == OrderSide.SELL).findAny();
+                    if (sellOrder.isPresent()) {
+                        Order order = sellOrder.get();
+                        BigDecimal limit = new BigDecimal(order.getPrice()).subtract(stepSize);
+                        if (askPrice.compareTo(limit) < 0) {
+                            logger.info("Oh oh the order book has lowered the price");
+                            binance.cancelOrder(order);
+                            binance.buyLimit(symbol, BTC_PER_TRADE, book.getBid().subtract(stepSize));
+                        } else {
+                            logger.debug("Nothing changed");
                         }
-                );
+                    } else {
+                        logger.info("There is amount locked but there are no sell orders?");
+                    }
+                } else {
+                    //An order has been not placed or not executed
+                    if (openOrders.isEmpty()) {
+                        //An order shall be placed, but consider sometimes the get open orders fail...
+                        if (book.getGap().compareTo(MIN_GAP) > 0) {
+                            binance.buyLimit(symbol, BTC_PER_TRADE, book.getBid());
+                        } else {
+                            logger.info("The gap for {} is too small", symbol);
+                            cancel();
+                        }
+                    } else {
+                        Optional<Order> buyOrder = openOrders.stream().filter(o -> o.getSide() == OrderSide.BUY).findAny();
+                        if (buyOrder.isPresent()) {
+                            Order order = buyOrder.get();
+                            BigDecimal limit = new BigDecimal(order.getPrice()).add(stepSize);
+                            if (book.getBid().compareTo(limit) > 0){
+                                logger.info("Oh oh the order book has increased the price");
+                                binance.cancelOrder(order);
+                                binance.buyLimit(symbol, BTC_PER_TRADE, book.getBid().subtract(stepSize));
+                            }else {
+                                logger.debug("Nothing changed");
+                            }
+                        }
+                    }
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -137,8 +99,6 @@ public class MonitorOrderBookTask extends TimerTask {
 
     @Override
     public boolean cancel() {
-        TimerTask placeOrderTask = new PlaceOrderTask(binance, symbol, storage, streamer);
-        new Timer("update-task-" + symbol).schedule(placeOrderTask, 100, 1000);
         return super.cancel();
     }
 }

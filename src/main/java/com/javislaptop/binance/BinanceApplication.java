@@ -10,11 +10,13 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.util.Scanner;
 
 @SpringBootApplication
 @EnableConfigurationProperties(BinanceProperties.class)
+@EnableScheduling
 public class BinanceApplication {
 
 
@@ -55,7 +57,7 @@ public class BinanceApplication {
             } else if(option.equals("3")) {
                 coinPairAnalyzer.execute();
             } else if (option.equals("4")) {
-                orderBookTrader.execute("DASHBTC");
+                orderBookTrader.execute();
             }
             } catch (Exception e ){
                 e.printStackTrace();

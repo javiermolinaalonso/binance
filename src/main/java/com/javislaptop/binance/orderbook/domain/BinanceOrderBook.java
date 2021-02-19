@@ -36,6 +36,10 @@ public class BinanceOrderBook {
         return lastUpdateId;
     }
 
+    public BigDecimal getGap() {
+        return getAsk().subtract(getBid()).divide(getBid(), 4, RoundingMode.HALF_DOWN);
+    }
+
     public Optional<BinanceOrderBookEntry> getFloor(BigDecimal threshold) {
         return findStepGreaterThan(bids, threshold);
     }
@@ -59,5 +63,13 @@ public class BinanceOrderBook {
                 .stream()
                 .filter(ask -> ask.getVolume().divide(total, 4, RoundingMode.DOWN).compareTo(threshold) > 0)
                 .findFirst();
+    }
+
+    public BigDecimal getBid() {
+        return bids.get(0).getPrice();
+    }
+
+    public BigDecimal getAsk() {
+        return asks.get(0).getPrice();
     }
 }
