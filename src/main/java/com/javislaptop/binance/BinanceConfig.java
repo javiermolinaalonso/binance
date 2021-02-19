@@ -6,6 +6,8 @@ import com.binance.api.client.BinanceApiWebSocketClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.time.Clock;
+import java.time.ZoneId;
 import java.util.Scanner;
 
 @Configuration
@@ -33,5 +35,10 @@ public class BinanceConfig {
     @Bean
     public Scanner scanner() {
         return new Scanner(System.in);
+    }
+
+    @Bean
+    public Clock clock() {
+        return Clock.system(ZoneId.of("Europe/Madrid"));
     }
 }

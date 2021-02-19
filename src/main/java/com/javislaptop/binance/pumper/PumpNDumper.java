@@ -44,7 +44,7 @@ public class PumpNDumper {
         );
 
 
-        Order marketSell = null;
+        NewOrderResponse marketSell = null;
         if (sellLimit.isPresent()) {
             BigDecimal targetPrice = new BigDecimal(buyResponse.getPrice()).multiply(sellLimit.get());
 
@@ -65,7 +65,7 @@ public class PumpNDumper {
         scanner.nextLine();
 
         if (marketSell != null) {
-            binance.cancelOrder(symbol, marketSell.getOrderId());
+            binance.cancelOrder(symbol, marketSell.getOrderId(), null);
         }
         Order sellResponse = binance.sellMarket(symbol, new BigDecimal(buyResponse.getExecutedQty()));
 
@@ -78,7 +78,8 @@ public class PumpNDumper {
             Optional<BigDecimal> averagePrice = binance.getAveragePrice(symbol);
             if (averagePrice.isPresent()) {
                 BigDecimal buyPrice = buyLimit.get().multiply(averagePrice.get());
-                buyResponse = binance.buyLimit(symbol, btcAmount, buyPrice);
+                NewOrderResponse newOrderResponse = binance.buyLimit(symbol, btcAmount, buyPrice);
+                buyResponse = binance.getOrder(symbol, newOrderResponse.getOrderId());
             }
         } else {
             buyResponse = binance.buyMarket(symbol, btcAmount);
@@ -89,7 +90,7 @@ public class PumpNDumper {
             if (buyResponse == null) {
                 System.out.println("There was an error with binance api, please cancel order manually");
             } else {
-                binance.cancelOrder(symbol, buyResponse.getOrderId());
+                binance.cancelOrder(symbol, buyResponse.getOrderId(), null);
             }
             return null;
         }

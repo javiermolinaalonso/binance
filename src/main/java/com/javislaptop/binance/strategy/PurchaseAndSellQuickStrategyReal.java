@@ -1,6 +1,7 @@
 package com.javislaptop.binance.strategy;
 
 import com.binance.api.client.domain.OrderStatus;
+import com.binance.api.client.domain.account.NewOrderResponse;
 import com.binance.api.client.domain.account.Order;
 import com.javislaptop.binance.api.Binance;
 import com.javislaptop.binance.api.stream.BinanceDataStreamer;
@@ -39,7 +40,8 @@ public class PurchaseAndSellQuickStrategyReal extends AbstractPurchaseAndSellQui
     @Override
     protected void purchase(String symbol) {
         buyPrice = binance.getBuyPrice(symbol);
-        buyOrder = binance.buyLimit(symbol, new BigDecimal(properties.getPurchaseAmount()), buyPrice);
+        NewOrderResponse newOrderResponse = binance.buyLimit(symbol, new BigDecimal(properties.getPurchaseAmount()), buyPrice);
+        buyOrder = binance.getOrder(symbol, newOrderResponse.getOrderId());
         logger.info(String.format("[%s] Buy %s at %s", Instant.now(Clock.systemUTC()).truncatedTo(ChronoUnit.SECONDS), symbol, buyPrice));
         if (buyOrder.getStatus() == OrderStatus.FILLED) {
             BigDecimal sellLimit = new BigDecimal(buyOrder.getPrice()).multiply(new BigDecimal(properties.getBenefitPercent()));
@@ -49,7 +51,7 @@ public class PurchaseAndSellQuickStrategyReal extends AbstractPurchaseAndSellQui
 
     @Override
     protected void sell(String symbol, BigDecimal bidPrice) {
-        Order order = binance.sellLimit(symbol, buyOrder.getExecutedQty(), bidPrice);
+        NewOrderResponse order = binance.sellLimit(symbol, buyOrder.getExecutedQty(), bidPrice);
         sellPrice = new BigDecimal(order.getPrice());
         sellToMarket(symbol, order);
     }
@@ -57,14 +59,14 @@ public class PurchaseAndSellQuickStrategyReal extends AbstractPurchaseAndSellQui
     @Override
     protected void sell(String symbol) {
         BigDecimal sellPrice = binance.getSellPrice(symbol);
-        Order order = binance.sellLimit(symbol, buyOrder.getExecutedQty(), sellPrice);
+        NewOrderResponse order = binance.sellLimit(symbol, buyOrder.getExecutedQty(), sellPrice);
         this.sellPrice = new BigDecimal(order.getPrice());
         sellToMarket(symbol, order);
     }
 
-    private void sellToMarket(String symbol, Order order) {
+    private void sellToMarket(String symbol, NewOrderResponse order) {
         if (order.getStatus() != OrderStatus.FILLED) {
-            binance.cancelOrder(symbol, order.getOrderId());
+            binance.cancelOrder(symbol, order.getOrderId(), null);
             binance.sellMarket(symbol, new BigDecimal(buyOrder.getExecutedQty()));
         }
     }

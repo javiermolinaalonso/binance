@@ -3,16 +3,16 @@ package com.javislaptop.binance.api;
 import com.binance.api.client.BinanceApiRestClient;
 import com.binance.api.client.domain.OrderStatus;
 import com.binance.api.client.domain.TimeInForce;
-import com.binance.api.client.domain.account.NewOrderResponse;
-import com.binance.api.client.domain.account.NewOrderResponseType;
-import com.binance.api.client.domain.account.Order;
-import com.binance.api.client.domain.account.Trade;
-import com.binance.api.client.domain.account.request.CancelOrderRequest;
-import com.binance.api.client.domain.account.request.CancelOrderResponse;
-import com.binance.api.client.domain.account.request.OrderStatusRequest;
+import com.binance.api.client.domain.account.*;
+import com.binance.api.client.domain.account.request.*;
 import com.binance.api.client.domain.general.ExchangeInfo;
+import com.binance.api.client.domain.general.SymbolInfo;
 import com.binance.api.client.domain.market.*;
 import com.binance.api.client.exception.BinanceApiException;
+import com.javislaptop.binance.orderbook.domain.BinanceOrderBook;
+import com.javislaptop.binance.orderbook.domain.BinanceOrderBookEntry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -23,6 +23,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static com.binance.api.client.domain.account.NewOrder.*;
 import static com.javislaptop.binance.Utils.calculateBenefit;
@@ -31,12 +32,24 @@ import static java.util.Optional.empty;
 @Service
 public class Binance {
 
+    private static final Logger logger = LoggerFactory.getLogger(Binance.class);
+
+    private static final Long REC_WINDOW = 2000L;
+
     private final BinanceApiRestClient binanceApiRestClient;
     private final BinanceFormatter formatter;
+    private final Clock clock;
 
-    public Binance(BinanceApiRestClient binanceApiRestClient, BinanceFormatter formatter) {
+    public Binance(BinanceApiRestClient binanceApiRestClient, BinanceFormatter formatter, Clock clock) {
         this.binanceApiRestClient = binanceApiRestClient;
         this.formatter = formatter;
+        this.clock = clock;
+        long systemTime = Instant.now(clock).toEpochMilli();
+        Long serverTime = binanceApiRestClient.getServerTime();
+        System.out.println(serverTime);
+        System.out.println(systemTime);
+        System.out.println("Adjusting difference time of " + String.valueOf(systemTime - serverTime));
+
     }
 
     public Optional<BigDecimal> getAveragePrice(String symbol) {
@@ -57,26 +70,30 @@ public class Binance {
         return binanceApiRestClient.getMyTrades(symbol).stream().filter(t -> t.getOrderId().equals(String.valueOf(orderId))).findAny();
     }
 
-    public Order buyLimit(String symbol, BigDecimal amount, BigDecimal priceLimit) {
+    public NewOrderResponse buyLimit(String symbol, BigDecimal amount, BigDecimal priceLimit) {
         String priceStr = formatter.formatPrice(symbol, priceLimit);
         String amountStr = formatter.formatAmount(symbol, amount.divide(priceLimit, 8, RoundingMode.DOWN));
-        System.out.println(String.format("Placing limit order for %s. Amount %s at price %s", symbol, amountStr, priceStr));
-        Long orderId = binanceApiRestClient.newOrder(limitBuy(symbol, TimeInForce.GTC, amountStr, priceStr).newOrderRespType(NewOrderResponseType.FULL)).getOrderId();
-
-        return getOrder(symbol, orderId);
+        logger.info("Placing limit order for {}. Amount {} at price {}", symbol, amountStr, priceStr);
+        NewOrder buyOrder = limitBuy(symbol, TimeInForce.GTC, amountStr, priceStr).newOrderRespType(NewOrderResponseType.FULL).timestamp(Instant.now(clock).toEpochMilli());
+        buyOrder.recvWindow(REC_WINDOW);
+        return binanceApiRestClient.newOrder(buyOrder);
     }
 
     public Order buyMarket(String symbol, BigDecimal amount) {
         String amountStr = formatter.formatPrice(symbol, amount);
-        NewOrderResponse newOrderResponse = binanceApiRestClient.newOrder(marketBuy(symbol, null).quoteOrderQty(amountStr).newOrderRespType(NewOrderResponseType.FULL));
+        logger.info("Placing buy market order for {}. Amount {}", symbol, amountStr);
+        NewOrder buyOrder = marketBuy(symbol, null).quoteOrderQty(amountStr).newOrderRespType(NewOrderResponseType.FULL);
+        buyOrder.recvWindow(REC_WINDOW);
+        NewOrderResponse newOrderResponse = binanceApiRestClient.newOrder(buyOrder);
         return getOrder(symbol, newOrderResponse.getOrderId());
     }
 
-    public Order sellLimit(String symbol, String amount, BigDecimal targetPrice) {
+    public NewOrderResponse sellLimit(String symbol, String amount, BigDecimal targetPrice) {
         String price = formatter.formatPrice(symbol, targetPrice);
-        System.out.println(String.format("Selling %s at target price %s", symbol, targetPrice));
-        NewOrderResponse newOrderResponse = binanceApiRestClient.newOrder(limitSell(symbol, TimeInForce.GTC, amount, price));
-        return getOrder(symbol, newOrderResponse.getOrderId());
+        logger.info("Placing sell limit order for {}. Amount {} at target price {}", symbol, amount, targetPrice);
+        NewOrder order = limitSell(symbol, TimeInForce.GTC, amount, price);
+        order.recvWindow(REC_WINDOW);
+        return binanceApiRestClient.newOrder(order);
     }
 
     public Order sellMarket(String symbol, BigDecimal amount) {
@@ -85,13 +102,15 @@ public class Binance {
         return getOrder(symbol, newOrderResponse.getOrderId());
     }
 
-    public void testBuyMarket(String symbol, BigDecimal quantity) {
-        String amountStr = formatter.formatPrice(symbol, quantity);
-        binanceApiRestClient.newOrderTest(marketBuy(symbol, amountStr).newOrderRespType(NewOrderResponseType.FULL));
+    public List<Order> getOpenOrders(String symbol) {
+        OrderRequest order = new OrderRequest(symbol).timestamp(Instant.now(clock).toEpochMilli());
+        order.recvWindow(REC_WINDOW);
+        return binanceApiRestClient.getOpenOrders(order);
     }
 
-    private Order getOrder(String symbol, Long orderId) {
+    public Order getOrder(String symbol, Long orderId) {
         OrderStatusRequest orderStatusRequest = new OrderStatusRequest(symbol, orderId);
+        orderStatusRequest.recvWindow(REC_WINDOW);
         int count = 0;
         Order order = null;
         do {
@@ -114,24 +133,26 @@ public class Binance {
         return order;
     }
 
-    public void testSellLimit(String symbol, BigDecimal price) {
-        String quantity = formatter.formatAmount(symbol, new BigDecimal(getAssetBalance(symbol)));
-        binanceApiRestClient.newOrderTest(limitSell(symbol, TimeInForce.GTC, quantity, formatter.formatPrice(symbol, price)).newOrderRespType(NewOrderResponseType.FULL));
-    }
-
-    public void testSellMarket(String symbol) {
-        String quantity = formatter.formatAmount(symbol, new BigDecimal(getAssetBalance(symbol)));
-        binanceApiRestClient.newOrderTest(marketSell(symbol, quantity).newOrderRespType(NewOrderResponseType.FULL));
-    }
-
-    public CancelOrderResponse cancelOrder(String symbol, Long orderId) {
-        return binanceApiRestClient.cancelOrder(new CancelOrderRequest(symbol, orderId));
+    public CancelOrderResponse cancelOrder(String symbol, Long orderId, String orderReqId) {
+        logger.info("Cancelling order for {} with id {}", symbol, orderId);
+        try {
+            CancelOrderRequest cancelOrderRequest = new CancelOrderRequest(symbol, orderId);
+            cancelOrderRequest.timestamp(Instant.now(clock).toEpochMilli());
+            cancelOrderRequest.recvWindow(REC_WINDOW);
+            return binanceApiRestClient.cancelOrder(cancelOrderRequest);
+        } catch (BinanceApiException e) {
+            logger.error("There was an error when cancelling the request for {} with id {}", symbol, orderId);
+            return null;
+        }
     }
 
     public String getAssetBalance(String asset) {
         return binanceApiRestClient.getAccount().getAssetBalance(asset).getFree();
     }
 
+    public Account getAccount() {
+        return binanceApiRestClient.getAccount();
+    }
     public void printPrices(String symbol, String purchasePricestr) {
         BigDecimal price = getBuyPrice(symbol);
         BigDecimal purchasePrice = new BigDecimal(purchasePricestr);
@@ -143,8 +164,19 @@ public class Binance {
         return binanceApiRestClient.getExchangeInfo();
     }
 
-    public OrderBook getOrderBook(String symbol, int limit) {
-        return binanceApiRestClient.getOrderBook(symbol, limit);
+    public SymbolInfo getSymbolInfo(String symbol) {
+        return binanceApiRestClient.getExchangeInfo()
+                .getSymbolInfo(symbol);
+    }
+
+    public BinanceOrderBook getOrderBook(String symbol, int limit) {
+        OrderBook orderBook = binanceApiRestClient.getOrderBook(symbol, limit);
+        return new BinanceOrderBook(
+                orderBook.getBids().parallelStream().map(bid -> new BinanceOrderBookEntry(new BigDecimal(bid.getPrice()), new BigDecimal(bid.getQty()))).collect(Collectors.toList()),
+                orderBook.getAsks().parallelStream().map(bid -> new BinanceOrderBookEntry(new BigDecimal(bid.getPrice()), new BigDecimal(bid.getQty()))).collect(Collectors.toList()),
+                Instant.now(clock),
+                orderBook.getLastUpdateId()
+        );
     }
 
     public BigDecimal getBuyPrice(String symbol) {
@@ -177,5 +209,19 @@ public class Binance {
         Instant from = when.minus(65, ChronoUnit.MINUTES);
         Instant to = when.minus(5, ChronoUnit.MINUTES);
         return binanceApiRestClient.getCandlestickBars(symbol, CandlestickInterval.ONE_MINUTE, 60, from.toEpochMilli(), to.toEpochMilli());
+    }
+
+    public List<Order> getAccountOrders(String symbol) {
+        AllOrdersRequest orderRequest = new AllOrdersRequest(symbol);
+        orderRequest.recvWindow(REC_WINDOW);
+        return binanceApiRestClient.getAllOrders(orderRequest);
+    }
+
+    public CancelOrderResponse cancelOrder(Order order) {
+        return cancelOrder(order.getSymbol(), order.getOrderId(), order.getClientOrderId());
+    }
+
+    public List<Order> getOpenOrders() {
+        return getOpenOrders(null);
     }
 }

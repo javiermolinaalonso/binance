@@ -3,6 +3,7 @@ package com.javislaptop.binance.strategy;
 import com.binance.api.client.domain.event.BookTickerEvent;
 import com.javislaptop.binance.api.stream.BinanceDataStreamer;
 import com.javislaptop.binance.api.stream.storage.StreamDataStorage;
+import com.javislaptop.binance.orderbook.domain.BinanceOrderBook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,9 +50,9 @@ public abstract class AbstractPurchaseAndSellQuickStrategy implements TradeStrat
 
             @Override
             public void run() {
-               Optional<BookTickerEvent> bookTickerEvent = storage.readBookTickerEvent(symbol);
+               Optional<BinanceOrderBook> bookTickerEvent = storage.getDepth(symbol);
                bookTickerEvent.ifPresent(book -> {
-                    BigDecimal bidPrice = new BigDecimal(book.getBidPrice());
+                    BigDecimal bidPrice = book.getBids().get(0).getPrice();
                     BigDecimal benefitPercent = calculateBenefit(buyPrice, bidPrice);
                     logger.debug(String.format("[%s] Benefit %.2f", Instant.now(Clock.systemUTC()).truncatedTo(ChronoUnit.SECONDS), benefitPercent));
 

@@ -1,7 +1,9 @@
 package com.javislaptop.binance.api.stream;
 
+import com.binance.api.client.BinanceApiCallback;
 import com.binance.api.client.BinanceApiWebSocketClient;
-import org.apache.logging.log4j.LogManager;
+import com.binance.api.client.domain.account.Order;
+import com.binance.api.client.domain.event.UserDataUpdateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -30,7 +32,7 @@ public class BinanceDataStreamer {
     }
 
     public void disableAggTradeEvents(String symbol) {
-        logger.info("Disabling agg trade events for {}", symbol);
+        logger.debug("Disabling agg trade events for {}", symbol);
         Closeable element = activeAggTradeEvents.remove(symbol);
         if (element != null) {
             try {
@@ -42,7 +44,7 @@ public class BinanceDataStreamer {
     }
 
     public void enableAggTradeEvents(String symbol) {
-        logger.info("Enabling agg trade events for {}", symbol);
+        logger.debug("Enabling agg trade events for {}", symbol);
         Closeable closeable = activeAggTradeEvents.get(symbol);
         if (closeable == null) {
             enableAggTrades(symbol);
@@ -50,7 +52,7 @@ public class BinanceDataStreamer {
     }
 
     public void enableBookTickerEvents(String symbol) {
-        logger.info("Enabling book events for {}", symbol);
+        logger.debug("Enabling book events for {}", symbol);
         Closeable closeable = activeBookTickerEvents.get(symbol);
         if (closeable == null) {
             enableBookTicker(symbol);
@@ -58,7 +60,7 @@ public class BinanceDataStreamer {
     }
 
     public void disableBookTickerEvents(String symbol) {
-        logger.info("Disabling book events for {}", symbol);
+        logger.debug("Disabling book events for {}", symbol);
         Closeable element = activeBookTickerEvents.remove(symbol);
         if (element != null) {
             try {
@@ -70,7 +72,7 @@ public class BinanceDataStreamer {
     }
 
     private void enableBookTicker(String symbol) {
-        activeBookTickerEvents.put(symbol, binanceWebsocket.onBookTickerEvent(symbol.toLowerCase(), bookTickerEventCallback));
+        activeBookTickerEvents.put(symbol, binanceWebsocket.onDepthEvent(symbol.toLowerCase(), bookTickerEventCallback));
     }
 
     private void enableAggTrades(String symbol) {
