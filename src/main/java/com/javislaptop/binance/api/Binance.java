@@ -14,11 +14,13 @@ import com.javislaptop.binance.orderbook.domain.BinanceOrderBookEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.ta4j.core.Bar;
+import org.ta4j.core.BaseBar;
+import org.ta4j.core.num.PrecisionNum;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.Clock;
-import java.time.Instant;
+import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
@@ -220,10 +222,23 @@ public class Binance {
         return binanceApiRestClient.getCandlestickBars(symbol, CandlestickInterval.HOURLY, 1440, now.minus(7, ChronoUnit.DAYS).toEpochMilli(), now.toEpochMilli());
     }
 
-    public List<Order> getAccountOrders(String symbol) {
-        AllOrdersRequest orderRequest = new AllOrdersRequest(symbol);
-        orderRequest.recvWindow(REC_WINDOW);
-        return binanceApiRestClient.getAllOrders(orderRequest);
+    public List<Bar> getWeekBar(String symbol, Instant now) {
+        List<Candlestick> lastHour = getLastWeek(symbol, now);
+        return lastHour.stream() .map(this::mapCandlestickToBar).collect(Collectors.toList());
+    }
+
+    private BaseBar mapCandlestickToBar(Candlestick c) {
+        return new BaseBar(
+                Duration.ofHours(1),
+                ZonedDateTime.ofInstant(Instant.ofEpochMilli(c.getCloseTime()), ZoneId.of("Europe/Paris")),
+                c.getOpen(),
+                c.getHigh(),
+                c.getLow(),
+                c.getClose(),
+                c.getVolume(),
+                "0",
+                c.getNumberOfTrades().toString(),
+                PrecisionNum::valueOf);
     }
 
     public CancelOrderResponse cancelOrder(Order order) {
@@ -232,5 +247,16 @@ public class Binance {
 
     public List<Order> getOpenOrders() {
         return getOpenOrders(null);
+    }
+
+    public List<Bar> getMinuteBar(String symbol, ZonedDateTime beginTime, ZonedDateTime endTime) {
+        return binanceApiRestClient.getCandlestickBars(symbol, CandlestickInterval.ONE_MINUTE, 60, beginTime.toInstant().toEpochMilli(), endTime.toInstant().toEpochMilli())
+                .stream()
+                .map(this::mapCandlestickToBar)
+                .collect(Collectors.toList());
+    }
+
+    public List<AggTrade> getTrades(String symbol, Instant from, Instant to) {
+        return binanceApiRestClient.getAggTrades(symbol, null, null, from.toEpochMilli(), to.toEpochMilli());
     }
 }
