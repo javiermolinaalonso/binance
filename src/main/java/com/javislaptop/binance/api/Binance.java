@@ -211,6 +211,14 @@ public class Binance {
         Instant to = when.minus(5, ChronoUnit.MINUTES);
         return binanceApiRestClient.getCandlestickBars(symbol, CandlestickInterval.ONE_MINUTE, 60, from.toEpochMilli(), to.toEpochMilli());
     }
+    public List<Candlestick> getLastDay(String symbol, Instant when) {
+        Instant from = when.minus(24, ChronoUnit.HOURS);
+        return binanceApiRestClient.getCandlestickBars(symbol, CandlestickInterval.ONE_MINUTE, 1440, from.toEpochMilli(), when.toEpochMilli());
+    }
+
+    public List<Candlestick> getLastWeek(String symbol, Instant now) {
+        return binanceApiRestClient.getCandlestickBars(symbol, CandlestickInterval.HOURLY, 1440, now.minus(7, ChronoUnit.DAYS).toEpochMilli(), now.toEpochMilli());
+    }
 
     public List<Order> getAccountOrders(String symbol) {
         AllOrdersRequest orderRequest = new AllOrdersRequest(symbol);
