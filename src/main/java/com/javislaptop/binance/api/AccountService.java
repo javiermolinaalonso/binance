@@ -10,6 +10,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import javax.annotation.PostConstruct;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,13 +28,21 @@ public class AccountService {
         this.binance = binance;
     }
 
-    @Scheduled(initialDelay = 0, fixedRate = 5000)
+    @PostConstruct
+    public void init() {
+        this.account = binance.getAccount();
+        this.openOrders = binance.getOpenOrders();
+        logger.info("Initializing with wallet:");
+        account.getBalances().stream().filter(b -> new BigDecimal(b.getFree()).compareTo(BigDecimal.ZERO) > 0).forEach(b -> logger.info("{}", b));
+    }
+
+    @Scheduled(initialDelay = 5000, fixedRate = 5000)
     public void refreshAccount() {
         logger.debug("Synchronizing account");
         this.account = binance.getAccount();
     }
 
-    @Scheduled(initialDelay = 0, fixedRate = 3000)
+    @Scheduled(initialDelay = 5000, fixedRate = 5000)
     public void refreshOrders() {
         logger.debug("Refreshing orders");
         List<Order> openOrders = binance.getOpenOrders();
@@ -43,7 +53,7 @@ public class AccountService {
             } catch (InterruptedException e) {
                 logger.error("Error while sleeping", e);
             }
-            openOrders = binance.getOpenOrders();
+            this.openOrders = openOrders;
         }
         this.openOrders = openOrders;
     }

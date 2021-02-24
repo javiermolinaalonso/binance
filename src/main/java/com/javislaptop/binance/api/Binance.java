@@ -97,7 +97,7 @@ public class Binance {
     }
 
     public Order sellMarket(String symbol, BigDecimal amount) {
-        System.out.println(String.format("Selling %s at market", symbol));
+        logger.info("Sell {} {} at market", amount.toPlainString(), symbol);
         NewOrderResponse newOrderResponse =  binanceApiRestClient.newOrder(marketSell(symbol, formatter.formatAmount(symbol, amount)).newOrderRespType(NewOrderResponseType.FULL));
         return getOrder(symbol, newOrderResponse.getOrderId());
     }
@@ -153,6 +153,7 @@ public class Binance {
     public Account getAccount() {
         return binanceApiRestClient.getAccount();
     }
+
     public void printPrices(String symbol, String purchasePricestr) {
         BigDecimal price = getBuyPrice(symbol);
         BigDecimal purchasePrice = new BigDecimal(purchasePricestr);
