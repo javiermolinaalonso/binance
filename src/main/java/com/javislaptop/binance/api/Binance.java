@@ -9,6 +9,7 @@ import com.binance.api.client.domain.general.ExchangeInfo;
 import com.binance.api.client.domain.general.SymbolInfo;
 import com.binance.api.client.domain.market.*;
 import com.binance.api.client.exception.BinanceApiException;
+import com.javislaptop.binance.api.domain.BinanceCandlestickConverter;
 import com.javislaptop.binance.orderbook.domain.BinanceOrderBook;
 import com.javislaptop.binance.orderbook.domain.BinanceOrderBookEntry;
 import org.slf4j.Logger;
@@ -249,14 +250,15 @@ public class Binance {
         return getOpenOrders(null);
     }
 
-    public List<Bar> getMinuteBar(String symbol, ZonedDateTime beginTime, ZonedDateTime endTime) {
-        return binanceApiRestClient.getCandlestickBars(symbol, CandlestickInterval.ONE_MINUTE, 60, beginTime.toInstant().toEpochMilli(), endTime.toInstant().toEpochMilli())
+    public List<com.javislaptop.binance.api.domain.Candlestick> getMinuteBar(String symbol, Instant beginTime, Instant endTime) {
+        return binanceApiRestClient.getCandlestickBars(symbol, CandlestickInterval.FIVE_MINUTES, 1000, beginTime.toEpochMilli(), endTime.toEpochMilli())
                 .stream()
-                .map(this::mapCandlestickToBar)
+                .map(c -> new BinanceCandlestickConverter().convert(c))
                 .collect(Collectors.toList());
     }
 
     public List<AggTrade> getTrades(String symbol, Instant from, Instant to) {
         return binanceApiRestClient.getAggTrades(symbol, null, null, from.toEpochMilli(), to.toEpochMilli());
     }
+
 }
