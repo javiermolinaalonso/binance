@@ -20,8 +20,6 @@ import java.util.Scanner;
 //@EnableScheduling
 public class BinanceApplication {
 
-
-
     public static void main(String[] args) {
         SpringApplication.run(BinanceApplication.class, args);
     }
