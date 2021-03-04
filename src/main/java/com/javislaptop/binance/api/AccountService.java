@@ -28,7 +28,7 @@ public class AccountService {
         this.binance = binance;
     }
 
-    @PostConstruct
+//    @PostConstruct
     public void init() {
         this.account = binance.getAccount();
         this.openOrders = binance.getOpenOrders();

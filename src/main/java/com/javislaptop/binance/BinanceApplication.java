@@ -17,7 +17,7 @@ import java.util.Scanner;
 
 @SpringBootApplication
 @EnableConfigurationProperties(BinanceProperties.class)
-@EnableScheduling
+//@EnableScheduling
 public class BinanceApplication {
 
 
@@ -64,6 +64,7 @@ public class BinanceApplication {
                 orderBookTrader.execute();
             } else if (option.equals("5")) {
                 buyOffAnalyzer.execute();
+                System.exit(0);
             }
             } catch (Exception e ){
                 e.printStackTrace();

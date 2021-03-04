@@ -219,7 +219,7 @@ public class Binance {
     }
 
     public List<Candlestick> getLastWeek(String symbol, Instant now) {
-        return binanceApiRestClient.getCandlestickBars(symbol, CandlestickInterval.HOURLY, 1440, now.minus(7, ChronoUnit.DAYS).toEpochMilli(), now.toEpochMilli());
+        return binanceApiRestClient.getCandlestickBars(symbol, CandlestickInterval.HOURLY, 1440, now.minus(60, ChronoUnit.DAYS).toEpochMilli(), now.toEpochMilli());
     }
 
     public List<Bar> getWeekBar(String symbol, Instant now) {
