@@ -15,10 +15,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 
-import static java.math.BigDecimal.valueOf;
-import static java.util.stream.Collectors.joining;
 
 @Service
 @EnableConfigurationProperties(MartingalaProperties.class)
@@ -60,7 +59,10 @@ public class MartingalaDetector {
         BigDecimal finalPrice = null;
         BigDecimal maxAmountInRisk = BigDecimal.ZERO;
         LocalDate maxRiskDay = null;
+        BigDecimal tradedVolume = BigDecimal.ZERO;
+        BigDecimal benefitOverRiskTotal = BigDecimal.ZERO;
 
+        List<Trade> trades = new ArrayList<>();
         while (from.compareTo(to) < 0) {
             LocalDate when = LocalDate.ofInstant(from, ZoneId.of("UTC"));
 
@@ -68,7 +70,7 @@ public class MartingalaDetector {
             List<Candlestick> candlesticks = binance.getMinuteBar(symbol, from, currentTo);
 
             BigDecimal referencePrice = candlesticks.get(0).getOpen();
-            BigDecimal sellPrice = candlesticks.get(candlesticks.size() - 1).getClose();
+            BigDecimal sellPrice = candlesticks.get(candlesticks.size() - 1).getClose().setScale(tradeDecimals, RoundingMode.HALF_DOWN);
 
             BigDecimal buyThreshold = calculateBuyThreshold(referencePrice, tradeDecimals);
             BigDecimal sellThreshold = calculateSellThreshold(referencePrice, tradeDecimals);
@@ -85,39 +87,43 @@ public class MartingalaDetector {
 
             for (Candlestick c : candlesticks) {
                 if (first || c.getLow().compareTo(buyThreshold) < 0) {
-                    BigDecimal spentBtc = baseAmount.multiply(new BigDecimal(count)).setScale(baseCurrencyPrecision, RoundingMode.DOWN);
-                    if (remainingAmount.compareTo(spentBtc) < 0) {
+                    BigDecimal spentBase = baseAmount.multiply(new BigDecimal(count)).setScale(baseCurrencyPrecision, RoundingMode.DOWN);
+                    if (remainingAmount.compareTo(spentBase) < 0) {
                         ranOutOfMoney = true;
-                        spentBtc = remainingAmount;
+                        spentBase = remainingAmount;
                     }
-                    if (spentBaseAmount.add(spentBtc).compareTo(originalAmount) > 0) {
+                    if (spentBaseAmount.add(spentBase).compareTo(originalAmount) > 0) {
                         ranOutOfMoney = true;
-                        spentBtc = spentBaseAmount.subtract(originalAmount);
+                        spentBase = spentBaseAmount.subtract(originalAmount);
                     }
-                    if (spentBtc.compareTo(BigDecimal.ZERO) > 0) {
-                        spentBaseAmount = spentBaseAmount.add(spentBtc);
-                        BigDecimal purchasedCoins = spentBtc.divide(buyThreshold, tradeDecimals, RoundingMode.DOWN).setScale(tradingCurrencyPrecision, RoundingMode.DOWN);
-                        remainingAmount = remainingAmount.subtract(spentBtc);
+                    if (spentBase.compareTo(BigDecimal.ZERO) > 0) {
+                        tradedVolume = tradedVolume.add(spentBase);
+                        spentBaseAmount = spentBaseAmount.add(spentBase);
+                        BigDecimal purchasedCoins = spentBase.divide(buyThreshold, tradingCurrencyPrecision, RoundingMode.DOWN).setScale(tradingCurrencyPrecision, RoundingMode.DOWN);
+                        remainingAmount = remainingAmount.subtract(spentBase);
                         purchasedAmount = purchasedAmount.add(purchasedCoins);
+
+                        trades.add(new Trade(c.getCloseTime(), purchasedCoins, buyThreshold, symbol, "BUY"));
                         buyThreshold = calculateBuyThreshold(buyThreshold, tradeDecimals);
                         count = count + props.getStepIncreases();
                     }
                 } else if (props.getIncrease().compareTo(BigDecimal.ZERO) > 0 && c.getHigh().compareTo(sellThreshold) > 0 && purchasedAmount.compareTo(BigDecimal.ZERO) > 0) {
-                    BigDecimal btcAfterSell = purchasedAmount.multiply(sellThreshold).setScale(baseCurrencyPrecision, RoundingMode.DOWN);
-                    remainingAmount = remainingAmount.add(btcAfterSell);
-                    BigDecimal benefitPercent = remainingAmount.divide(amountBeforeTrading, 4, RoundingMode.HALF_DOWN).subtract(BigDecimal.ONE).multiply(new BigDecimal(100));
+                    BigDecimal baseCoinAfterSell = purchasedAmount.multiply(sellThreshold).setScale(baseCurrencyPrecision, RoundingMode.DOWN);
+                    tradedVolume = tradedVolume.add(baseCoinAfterSell);
+                    remainingAmount = remainingAmount.add(baseCoinAfterSell);
                     BigDecimal averagePrice = spentBaseAmount.divide(purchasedAmount, tradeDecimals, RoundingMode.HALF_DOWN).setScale(tradeDecimals, RoundingMode.DOWN);
-                    logger.debug("Base currency after selling {} {}", remainingAmount, baseCurrency);
-                    BigDecimal spentComission = spentBaseAmount.add(btcAfterSell).multiply(commission).setScale(baseCurrencyPrecision, RoundingMode.HALF_DOWN);
+                    BigDecimal spentComission = spentBaseAmount.add(baseCoinAfterSell).multiply(commission).setScale(baseCurrencyPrecision, RoundingMode.HALF_DOWN);
+                    BigDecimal benefitPercent = remainingAmount.subtract(spentComission).divide(amountBeforeTrading, 2, RoundingMode.HALF_DOWN).subtract(BigDecimal.ONE).multiply(new BigDecimal(100));
                     totalComission = totalComission.add(spentComission);
                     if (spentBaseAmount.compareTo(maxAmountInRisk) > 0) {
                         maxRiskDay = LocalDate.ofInstant(from, ZoneId.of("UTC"));
                         maxAmountInRisk = spentBaseAmount;
                     }
-
-                    logger.debug("[{}] Purchased {} {} at average price of {}. Sold them at price {} {}. Expected comission of {} {}. Benefit without commissions of {}%", when, purchasedAmount, tradingCurrency, averagePrice, sellThreshold, baseCurrency, spentComission, baseCurrency, benefitPercent);
+                    BigDecimal benefitOverBetMoney = baseCoinAfterSell.subtract(spentComission).divide(spentBaseAmount, baseCurrencyPrecision, RoundingMode.HALF_DOWN).subtract(BigDecimal.ONE).multiply(new BigDecimal(100));
+                    trades.add(new Trade(c.getCloseTime(), averagePrice, sellThreshold, symbol, "SELL"));
+                    logger.info("[{}] Purchased {} {} at average price of {}. Sold them at price {} {}. Expected comission of {} {}. Benefit with commissions of {}%. Benefit over risk is {} %", when, purchasedAmount, tradingCurrency, averagePrice, sellPrice, baseCurrency, spentComission, baseCurrency, benefitPercent, benefitOverBetMoney);
                     if (ranOutOfMoney) {
-                        logger.info("[{}] You ran out of money today", when);
+                        logger.debug("[{}] You ran out of money today", when);
                     }
 
                     ranOutOfMoney = false;
@@ -133,22 +139,23 @@ public class MartingalaDetector {
             logger.debug("Daily purchase {} {}", purchasedAmount, tradingCurrency);
             logger.debug("Remaining before selling {} {}", remainingAmount, baseCurrency);
 
-
             if (purchasedAmount.compareTo(BigDecimal.ZERO) > 0) {
-                BigDecimal btcAfterSell = purchasedAmount.multiply(sellPrice).setScale(baseCurrencyPrecision, RoundingMode.DOWN);
-                remainingAmount = remainingAmount.add(btcAfterSell);
-                BigDecimal benefitPercent = remainingAmount.divide(amountBeforeTrading, 4, RoundingMode.HALF_DOWN).subtract(BigDecimal.ONE).multiply(new BigDecimal(100));
+                BigDecimal baseCoinAfterSell = purchasedAmount.multiply(sellPrice).setScale(baseCurrencyPrecision, RoundingMode.DOWN);
+                tradedVolume = tradedVolume.add(baseCoinAfterSell);
+                remainingAmount = remainingAmount.add(baseCoinAfterSell);
                 BigDecimal averagePrice = spentBaseAmount.divide(purchasedAmount, tradeDecimals, RoundingMode.HALF_DOWN).setScale(tradeDecimals, RoundingMode.DOWN);;
-                logger.debug("Base currency after selling {} {}", remainingAmount, baseCurrency);
-                BigDecimal spentComission = spentBaseAmount.add(btcAfterSell).multiply(commission).setScale(baseCurrencyPrecision, RoundingMode.HALF_DOWN);
+                BigDecimal spentComission = spentBaseAmount.add(baseCoinAfterSell).multiply(commission).setScale(baseCurrencyPrecision, RoundingMode.HALF_DOWN);
+                BigDecimal benefitPercent = remainingAmount.subtract(spentComission).divide(amountBeforeTrading, 8, RoundingMode.HALF_DOWN).subtract(BigDecimal.ONE).multiply(new BigDecimal(100)).setScale(2, RoundingMode.HALF_DOWN);
+                BigDecimal benefitOverBetMoney = baseCoinAfterSell.subtract(spentComission).divide(spentBaseAmount, baseCurrencyPrecision, RoundingMode.HALF_DOWN).subtract(BigDecimal.ONE).multiply(new BigDecimal(100));
+                benefitOverRiskTotal = benefitOverRiskTotal.add(benefitOverBetMoney);
                 totalComission = totalComission.add(spentComission).setScale(baseCurrencyPrecision, RoundingMode.HALF_DOWN);
 
                 if (spentBaseAmount.compareTo(maxAmountInRisk) > 0) {
                     maxRiskDay = LocalDate.ofInstant(from, ZoneId.of("UTC"));
                     maxAmountInRisk = spentBaseAmount;
                 }
-
-                logger.debug("[{}] Purchased {} {} at average price of {}. Sold them at price {} {}. Expected comission of {} {}. Benefit without commissions of {}%", when, purchasedAmount, tradingCurrency, averagePrice, sellPrice, baseCurrency, spentComission, baseCurrency, benefitPercent);
+                trades.add(new Trade(currentTo, purchasedAmount, sellPrice, symbol, "SELL"));
+                logger.debug("[{}] Purchased {} {} at average price of {}. Sold them at price {} {}. Expected comission of {} {}. Benefit with commissions of {}%. Benefit over risk is {} %", when, purchasedAmount, tradingCurrency, averagePrice, sellPrice, baseCurrency, spentComission, baseCurrency, benefitPercent, benefitOverBetMoney);
                 if (ranOutOfMoney) {
                     logger.info("[{}] You ran out of money today", when);
                 }
@@ -158,13 +165,17 @@ public class MartingalaDetector {
             currentTo = currentTo.plus(1, ChronoUnit.DAYS);
         }
 
-        logger.info("Summary for {}{} between {} and {}. Starting with {} {} with base trades of {}{} and doing steps of {}.",
-                tradingCurrency, baseCurrency, props.getFrom(), props.getTo(), props.getOriginalAmount(), props.getBaseCurrency(), props.getBaseAmount(), props.getBaseCurrency(), props.getStepIncreases());
+        trades.forEach(logger::info);
+        logger.info("Summary for {}{} between {} and {}. Starting with {} {} with base trades of {}{}.",
+                tradingCurrency, baseCurrency, props.getFrom(), props.getTo(), props.getOriginalAmount(), props.getBaseCurrency(), props.getBaseAmount(), props.getBaseCurrency());
         logger.info("The initial price for the period was {} and the final was {}. An increase of {}%", initialPrice, finalPrice, finalPrice.divide(initialPrice, 4, RoundingMode.HALF_DOWN).subtract(BigDecimal.ONE).multiply(new BigDecimal(100)));
         BigDecimal amountWithComission = remainingAmount.subtract(totalComission);
         logger.info("Original amount was {} {} and now have {} {}. An increase of {}%", originalAmount, baseCurrency, amountWithComission, baseCurrency, amountWithComission.divide(originalAmount, 4, RoundingMode.HALF_DOWN).subtract(BigDecimal.ONE).multiply(new BigDecimal(100)));
+        logger.info("The benefit over risk is {}%", benefitOverRiskTotal);
         logger.info("The maximum risk was {} {} the day {}", maxAmountInRisk, baseCurrency, maxRiskDay);
         logger.info("The applied comission is {} {}", totalComission, baseCurrency);
+        logger.info("The traded volume is {} {}", tradedVolume, baseCurrency);
+
     }
 
     private BigDecimal calculateBuyThreshold(BigDecimal referencePrice, Integer tradeDecimals) {

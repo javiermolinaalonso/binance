@@ -3,15 +3,15 @@ binance:
   secret:
 
 martingala:
-  originalAmount: 1
-  baseAmount: 0.05
-  decrease: 1
+  originalAmount: 10
+  baseAmount: 1
+  decrease: 3
   increase: 0
   purchaseBeginningDay: true
   baseCurrency: BTC
-  tradingCurrency: ETH
-  from: 2021-02-01
-  to: 2021-02-10
+  tradingCurrency: DASH
+  from: 2021-01-01
+  to: 2021-03-04
   comission: 0.001
   stepIncreases: 0 #How much we increase the base amount per step
 
