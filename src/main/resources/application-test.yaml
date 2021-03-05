@@ -6,9 +6,11 @@ martingala:
   originalAmount: 1
   baseAmount: 0.05
   decrease: 1
-  baseCurrency: USDT
-  tradingCurrency: ENJ
-  from: 2021-01-01
+  increase: 0
+  purchaseBeginningDay: true
+  baseCurrency: BTC
+  tradingCurrency: NXS
+  from: 2021-02-01
   to: 2021-03-01
   comission: 0.001
   stepIncreases: 0 #How much we increase the base amount per step

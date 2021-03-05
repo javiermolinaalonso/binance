@@ -10,6 +10,7 @@ public class MartingalaProperties {
 
     private String baseAmount;
     private String decrease;
+    private String increase;
     private String originalAmount;
     private String baseCurrency;
     private String tradingCurrency;
@@ -17,6 +18,7 @@ public class MartingalaProperties {
     private String to;
     private String comission;
     private int stepIncreases;
+    private boolean purchaseBeginningDay;
 
     public BigDecimal getBaseAmount() {
         return new BigDecimal(baseAmount);
@@ -88,5 +90,21 @@ public class MartingalaProperties {
 
     public void setStepIncreases(int stepIncreases) {
         this.stepIncreases = stepIncreases;
+    }
+
+    public BigDecimal getIncrease() {
+        return new BigDecimal(increase);
+    }
+
+    public void setIncrease(String increase) {
+        this.increase = increase;
+    }
+
+    public boolean isPurchaseBeginningDay() {
+        return purchaseBeginningDay;
+    }
+
+    public void setPurchaseBeginningDay(boolean purchaseBeginningDay) {
+        this.purchaseBeginningDay = purchaseBeginningDay;
     }
 }
