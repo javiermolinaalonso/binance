@@ -14,6 +14,7 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 @Service
@@ -43,6 +44,18 @@ public class BinanceFormatter {
     @PostConstruct
     public void initialize() {
         this.exchangeInfo = binanceApiRestClient.getExchangeInfo();
+    }
+
+    public Integer getTradeDecimals(String symbol) {
+        return getDecimals(symbol, FilterType.PRICE_FILTER, SymbolFilter::getTickSize);
+    }
+
+    public Integer getBaseAssetPrecision(String symbol) {
+        return exchangeInfo.getSymbolInfo(symbol).getBaseAssetPrecision();
+    }
+
+    public Integer getQuotePrecision(String symbol) {
+        return exchangeInfo.getSymbolInfo(symbol).getQuotePrecision();
     }
 
     public String formatPrice(String symbol, BigDecimal value) {

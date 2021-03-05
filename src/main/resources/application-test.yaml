@@ -9,9 +9,9 @@ martingala:
   increase: 0
   purchaseBeginningDay: true
   baseCurrency: BTC
-  tradingCurrency: NXS
+  tradingCurrency: ETH
   from: 2021-02-01
-  to: 2021-03-01
+  to: 2021-02-10
   comission: 0.001
   stepIncreases: 0 #How much we increase the base amount per step
 
