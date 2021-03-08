@@ -1,6 +1,7 @@
 package com.javislaptop.binance.detector.martingala;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
@@ -42,6 +43,6 @@ public class Trade {
 
     @Override
     public String toString() {
-        return String.format("[%s] %s %s %s at %s", when.truncatedTo(ChronoUnit.MINUTES), direction, amount, symbol, price);
+        return String.format("%s,%s,%s,%s,%s", when.truncatedTo(ChronoUnit.MINUTES), direction, amount.setScale(8, RoundingMode.HALF_DOWN), symbol, price.setScale(8, RoundingMode.HALF_DOWN));
     }
 }

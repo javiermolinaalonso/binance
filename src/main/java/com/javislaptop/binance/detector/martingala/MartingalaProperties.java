@@ -4,6 +4,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @ConfigurationProperties(prefix = "martingala")
 public class MartingalaProperties {
@@ -13,11 +14,10 @@ public class MartingalaProperties {
     private String increase;
     private String originalAmount;
     private String baseCurrency;
-    private String tradingCurrency;
+    private List<String> tradingCurrency;
     private String from;
     private String to;
     private String comission;
-    private int stepIncreases;
     private boolean purchaseBeginningDay;
 
     public BigDecimal getBaseAmount() {
@@ -52,11 +52,11 @@ public class MartingalaProperties {
         this.baseCurrency = baseCurrency;
     }
 
-    public String getTradingCurrency() {
+    public List<String> getTradingCurrency() {
         return tradingCurrency;
     }
 
-    public void setTradingCurrency(String tradingCurrency) {
+    public void setTradingCurrency(List<String> tradingCurrency) {
         this.tradingCurrency = tradingCurrency;
     }
 
@@ -82,14 +82,6 @@ public class MartingalaProperties {
 
     public void setComission(String comission) {
         this.comission = comission;
-    }
-
-    public int getStepIncreases() {
-        return stepIncreases;
-    }
-
-    public void setStepIncreases(int stepIncreases) {
-        this.stepIncreases = stepIncreases;
     }
 
     public BigDecimal getIncrease() {

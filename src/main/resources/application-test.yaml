@@ -7,13 +7,12 @@ martingala:
   baseAmount: 1
   decrease: 3
   increase: 0
-  purchaseBeginningDay: true
+  purchaseBeginningDay: false
   baseCurrency: BTC
-  tradingCurrency: DASH
-  from: 2021-01-01
-  to: 2021-03-04
+  tradingCurrency: ETH
+  from: 2020-01-01
+  to: 2020-01-31
   comission: 0.001
-  stepIncreases: 0 #How much we increase the base amount per step
 
 pump-strategy:
   quick:

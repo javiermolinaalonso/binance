@@ -1,0 +1,99 @@
+package com.javislaptop.binance.detector.martingala;
+
+import com.javislaptop.binance.api.BinanceFormatter;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Instant;
+import java.util.*;
+
+import static java.util.Optional.of;
+
+@Service
+public class WalletState {
+
+    private static final Logger logger = LogManager.getLogger(WalletState.class);
+
+    private final MartingalaProperties props;
+
+    private final BigDecimal spendLimit;
+    private final String baseCurrency;
+    private final List<Trade> trades;
+    private final BinanceFormatter binanceFormatter;
+
+    private BigDecimal baseCoins;
+    private Map<String, BigDecimal> tradeCoins;
+    private BigDecimal tradedVolume;
+    private BigDecimal totalFee;
+
+    public WalletState(MartingalaProperties props, BinanceFormatter binanceFormatter) {
+        this.props = props;
+        this.spendLimit = props.getOriginalAmount();
+        this.baseCurrency = props.getBaseCurrency();
+        this.binanceFormatter = binanceFormatter;
+        trades = new ArrayList<>();
+        baseCoins = spendLimit;
+        tradeCoins = new HashMap<>();
+        totalFee = BigDecimal.ZERO;
+        tradedVolume = BigDecimal.ZERO;
+    }
+
+    public Optional<Trade> buy(String symbol, BigDecimal tradeBaseCoins, BigDecimal price, Instant when) {
+        if (baseCoins.compareTo(tradeBaseCoins) < 0) {
+            logger.warn("[{}] Not enough money to perform the trade {} at {}", when, symbol, price);
+            return Optional.empty();
+        }
+        String tradeCoin = symbol.replaceAll(baseCurrency, "");
+        BigDecimal fee = computeFee(tradeBaseCoins);
+        BigDecimal purchasedCoins = tradeBaseCoins.subtract(fee).divide(price, binanceFormatter.getBaseAssetPrecision(symbol), RoundingMode.DOWN);
+        tradeCoins.put(tradeCoin, tradeCoins.getOrDefault(tradeCoin, BigDecimal.ZERO).add(purchasedCoins));
+        baseCoins = baseCoins.subtract(tradeBaseCoins);
+        tradedVolume = tradedVolume.add(tradeBaseCoins);
+        return addTrade(symbol, price, when, purchasedCoins, "BUY");
+    }
+
+    public void sell(String symbol, BigDecimal sellPrice, Instant when) {
+        String tradeCoin = symbol.replaceAll(baseCurrency, "");
+        BigDecimal amountOfTradeCoins = tradeCoins.getOrDefault(tradeCoin, BigDecimal.ZERO);
+        if (amountOfTradeCoins.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal baseCoinAfterSell = amountOfTradeCoins.multiply(sellPrice).setScale(binanceFormatter.getQuotePrecision(symbol), RoundingMode.DOWN);
+            BigDecimal fee = computeFee(baseCoinAfterSell);
+            baseCoinAfterSell = baseCoinAfterSell.subtract(fee);
+            baseCoins = baseCoins.add(baseCoinAfterSell);
+            tradeCoins.put(tradeCoin, BigDecimal.ZERO);
+            addTrade(symbol, sellPrice, when, amountOfTradeCoins, "SELL");
+        }
+    }
+
+    private Optional<Trade> addTrade(String symbol, BigDecimal price, Instant when, BigDecimal tradedCoins, String direction) {
+        Trade trade = new Trade(when, tradedCoins, price, symbol, direction);
+        trades.add(trade);
+        return of(trade);
+    }
+
+    private BigDecimal computeFee(BigDecimal tradeBaseCoins) {
+        BigDecimal comission = tradeBaseCoins.multiply(props.getComission());
+        totalFee = totalFee.add(comission);
+        return comission;
+    }
+
+    public BigDecimal getTradedVolume() {
+        return tradedVolume;
+    }
+
+    public List<Trade> getTrades() {
+        return trades;
+    }
+
+    public void printInfo() {
+        String tradingCurrencies = tradeCoins.keySet().toString();
+        logger.info("Summary for {}{} between {} and {}. Starting with {} {} with base trades of {}{}.",
+                tradingCurrencies, baseCurrency, props.getFrom(), props.getTo(), props.getOriginalAmount(), props.getBaseCurrency(), props.getBaseAmount(), props.getBaseCurrency());
+        logger.info("Original amount was {} {} and now have {} {}. An increase of {}%", spendLimit, baseCurrency, baseCoins, baseCurrency, baseCoins.divide(spendLimit, 4, RoundingMode.HALF_DOWN).subtract(BigDecimal.ONE).multiply(new BigDecimal(100)));
+        logger.info("The applied comission is {} {}", totalFee, baseCurrency);
+        logger.info("The traded volume is {} {}", tradedVolume, baseCurrency);
+    }
+}
