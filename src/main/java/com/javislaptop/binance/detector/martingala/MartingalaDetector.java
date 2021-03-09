@@ -42,28 +42,20 @@ public class MartingalaDetector {
         List<String> tradingCurrencies = props.getTradingCurrency();
         String baseCurrency = props.getBaseCurrency();
 
-        BigDecimal initialPrice = null;
-        BigDecimal finalPrice = null;
+        Instant from = props.getFrom().atStartOfDay(ZoneId.of("UTC")).toInstant();
+        Instant to = props.getTo().atStartOfDay(ZoneId.of("UTC")).toInstant();
+        Instant currentTo = from.plus(1, ChronoUnit.DAYS);
 
-        for (String tradingCurrency : tradingCurrencies) {
-            String symbol = tradingCurrency + baseCurrency;
-            Integer tradeDecimals = binanceFormatter.getTradeDecimals(symbol);
+        while (from.compareTo(to) < 0) {
 
-            Instant from = props.getFrom().atStartOfDay(ZoneId.of("UTC")).toInstant();
-            Instant to = props.getTo().atStartOfDay(ZoneId.of("UTC")).toInstant();
-            Instant currentTo = from.plus(1, ChronoUnit.DAYS);
+            for (String tradingCurrency : tradingCurrencies) {
+                String symbol = tradingCurrency + baseCurrency;
+                Integer tradeDecimals = binanceFormatter.getTradeDecimals(symbol);
 
-            BigDecimal openPrice;
-            BigDecimal sellPrice;
-            while (from.compareTo(to) < 0) {
                 List<Candlestick> candlesticks = binance.getMinuteBar(symbol, from, currentTo);
 
-                openPrice = candlesticks.get(0).getOpen().setScale(tradeDecimals, RoundingMode.HALF_DOWN);
-                sellPrice = candlesticks.get(candlesticks.size() - 1).getClose().setScale(tradeDecimals, RoundingMode.HALF_DOWN);
-
-                if (initialPrice == null) {
-                    initialPrice = openPrice;
-                }
+                BigDecimal openPrice = candlesticks.get(0).getOpen().setScale(tradeDecimals, RoundingMode.HALF_DOWN);
+                BigDecimal sellPrice = candlesticks.get(candlesticks.size() - 1).getClose().setScale(tradeDecimals, RoundingMode.HALF_DOWN);
 
                 BigDecimal buyThreshold = updateBuyThreshold(openPrice, tradeDecimals);
                 for (Candlestick c : candlesticks) {
@@ -74,16 +66,13 @@ public class MartingalaDetector {
                 }
 
                 wallet.sell(symbol, sellPrice, currentTo);
-
-                from = from.plus(1, ChronoUnit.DAYS);
-                currentTo = currentTo.plus(1, ChronoUnit.DAYS);
-                finalPrice = sellPrice;
             }
+            from = from.plus(1, ChronoUnit.DAYS);
+            currentTo = currentTo.plus(1, ChronoUnit.DAYS);
         }
 
         wallet.getTrades().stream().sorted(Comparator.comparing(Trade::getWhen)).forEach(logger::info);
         wallet.printInfo();
-        logger.info("The initial price for the period was {} and the final was {}. An increase of {}%", initialPrice, finalPrice, finalPrice.divide(initialPrice, 4, RoundingMode.HALF_DOWN).subtract(BigDecimal.ONE).multiply(new BigDecimal(100)));
     }
 
     private BigDecimal updateBuyThreshold(BigDecimal referencePrice, Integer tradeDecimals) {
