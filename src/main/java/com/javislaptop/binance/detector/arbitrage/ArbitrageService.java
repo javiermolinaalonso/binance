@@ -25,8 +25,8 @@ public class ArbitrageService {
     private final AccountService accountService;
 
     private final Map<String, List<String>> pairs = Map.of(
-            "PHBBTC", List.of("PHBTUSD", "BTCTUSD"),
-            "SCBTC", List.of("SCUSDT", "BTCUSDT")
+            "CHRBTC", List.of("CHRBNB", "BNBBTC")
+//            "SCBTC", List.of("SCUSDT", "BTCUSDT")
 //            "COSBTC", List.of("COSUSDT", "BTCUSDT"),
 //            "CELRBTC", List.of("CELRUSDT", "BTCUSDT"),
 //            "NBSBTC", List.of("NBSUSDT", "BTCUSDT")
@@ -38,34 +38,37 @@ public class ArbitrageService {
     }
 
     public void execute() {
+//        pairs.forEach(
+//                (pair, sells) -> {
+//                    ArbitrageTask placeOrderTask = new ArbitrageTask(accountService, binance, pair, sells);
+//                    new Timer("arbitrage-task-"+pair).schedule(placeOrderTask, 1000, 5000);
+//                }
+//        );
+
+
         pairs.forEach(
                 (pair, sells) -> {
-                    ArbitrageTask placeOrderTask = new ArbitrageTask(accountService, binance, pair, sells);
-                    new Timer("arbitrage-task-"+pair).schedule(placeOrderTask, 1000, 5000);
+                    BigDecimal initialExpectedPrice = binance.getOrderBook(pair, 5).getBid();
+
+                    BigDecimal amountOfCoins = BigDecimal.ONE.divide(initialExpectedPrice, 0, RoundingMode.DOWN);
+                    logger.info("The ask price for {} is {}.", pair, initialExpectedPrice.toPlainString());
+
+                    String s1 = sells.get(0);
+                    BigDecimal bid = binance.getOrderBook(s1, 5).getBid();
+                    BigDecimal amount = amountOfCoins.multiply(bid);
+                    logger.info("The bid price for {} is {}.", s1, bid);
+
+                    if (sells.size() > 1) {
+                        String s2 = sells.get(1);
+                        BigDecimal bid2 = binance.getOrderBook(s2, 5).getBid();
+                        logger.info("The bid price for {} is {}.", s2, bid2);
+                        BigDecimal amountOfBtc = amount.multiply(bid2).setScale(8, RoundingMode.HALF_DOWN);
+                        logger.info("Expected amount of btc is {}", amountOfBtc);
+                    }
                 }
         );
 
-
-//        pairs.forEach(
-//                (pair, sells) -> {
-//                    BigDecimal initialExpectedPrice = binance.getOrderBook(pair, 5).getAsk();
-//
-//                    BigDecimal amountOfCoins = BigDecimal.ONE.divide(initialExpectedPrice, 0, RoundingMode.DOWN);
-//                    logger.info("The initial price for {} is {}. Purchased {}.", pair, initialExpectedPrice.toPlainString(), amountOfCoins);
-//
-//                    String s1 = sells.get(0);
-//                    BigDecimal bid = binance.getOrderBook(s1, 5).getBid();
-//                    BigDecimal amount = amountOfCoins.multiply(bid);
-//                    logger.info("The bid price for {} is {}. Current amount is {}", s1, bid, amount);
-//
-//                    if (sells.size() > 1) {
-//                        String s2 = sells.get(1);
-//                        BigDecimal ask = binance.getOrderBook(s2, 5).getAsk();
-//                        BigDecimal amountOfBtc = amount.divide(ask, 8, RoundingMode.HALF_DOWN);
-//                        logger.info("Expected amount of btc is {}", amountOfBtc);
-//                    }
-//                }
-//        );
+        System.exit(0);
     }
 
 

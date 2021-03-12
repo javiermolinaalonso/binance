@@ -2,6 +2,7 @@ package com.javislaptop.binance;
 
 import com.javislaptop.binance.detector.arbitrage.ArbitrageService;
 import com.javislaptop.binance.detector.martingala.MartingalaDetector;
+import com.javislaptop.binance.detector.martingala.MartingalaDetectorImproved;
 import com.javislaptop.binance.detector.pump.HistoricalPumpDetector;
 import com.javislaptop.binance.detector.pump.RealtimePumpDetector;
 import com.javislaptop.binance.orderbook.OrderBookTrader;
@@ -31,8 +32,9 @@ public class BinanceApplication {
     private final OrderBookTrader orderBookTrader;
     private final HistoricalPumpDetector buyOffAnalyzer;
     private final MartingalaDetector martingalaDetector;
+    private final MartingalaDetectorImproved martingalaDetectorImproved;
 
-    public BinanceApplication(Scanner scanner, PumpNDumper pumpNDumper, RealtimePumpDetector realtimePumpDetector, ArbitrageService arbitrageService, OrderBookTrader orderBookTrader, HistoricalPumpDetector buyOffAnalyzer, MartingalaDetector martingalaDetector) {
+    public BinanceApplication(Scanner scanner, PumpNDumper pumpNDumper, RealtimePumpDetector realtimePumpDetector, ArbitrageService arbitrageService, OrderBookTrader orderBookTrader, HistoricalPumpDetector buyOffAnalyzer, MartingalaDetector martingalaDetector, MartingalaDetectorImproved martingalaDetectorImproved) {
         this.scanner = scanner;
         this.pumpNDumper = pumpNDumper;
         this.realtimePumpDetector = realtimePumpDetector;
@@ -40,6 +42,7 @@ public class BinanceApplication {
         this.orderBookTrader = orderBookTrader;
         this.buyOffAnalyzer = buyOffAnalyzer;
         this.martingalaDetector = martingalaDetector;
+        this.martingalaDetectorImproved = martingalaDetectorImproved;
     }
 
     @Bean
@@ -67,7 +70,8 @@ public class BinanceApplication {
                 buyOffAnalyzer.execute();
                 System.exit(0);
             }else if (option.equals("6")) {
-                martingalaDetector.execute();
+//                martingalaDetector.execute();
+                martingalaDetectorImproved.execute();
                 System.exit(0);
             }
             } catch (Exception e ){

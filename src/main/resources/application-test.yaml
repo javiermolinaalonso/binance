@@ -3,15 +3,16 @@ binance:
   secret:
 
 martingala:
-  originalAmount: 10
-  baseAmount: 1
-  decrease: 3
-  increase: 0
-  purchaseBeginningDay: false
+  originalAmount: 10000
+  baseAmount: 200
+  automaticThreshold: false
+  decrease: 0.02
   baseCurrency: BTC
-  tradingCurrency: ETH
-  from: 2020-01-01
-  to: 2020-01-31
+  limitToInitialInvestment: false
+  tradingCurrency: THETA,DOT,NANO,LINK,XTZ
+  interval: DAILY
+  from: 2021-01-01
+  to: 2021-03-01
   comission: 0.001
 
 pump-strategy:

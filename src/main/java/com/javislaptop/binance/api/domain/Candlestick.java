@@ -1,6 +1,7 @@
 package com.javislaptop.binance.api.domain;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 
 public class Candlestick {
@@ -87,5 +88,13 @@ public class Candlestick {
 
     public BigDecimal getTakerBuyQuoteAssetVolume() {
         return takerBuyQuoteAssetVolume;
+    }
+
+    public BigDecimal getAmplitude() {
+        return getHigh().divide(getLow(), RoundingMode.HALF_DOWN).subtract(BigDecimal.ONE);
+    }
+
+    public boolean isBullish() {
+        return getClose().compareTo(getOpen()) > 0;
     }
 }

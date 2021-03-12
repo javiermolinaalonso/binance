@@ -11,14 +11,15 @@ public class MartingalaProperties {
 
     private String baseAmount;
     private String decrease;
-    private String increase;
     private String originalAmount;
     private String baseCurrency;
     private List<String> tradingCurrency;
     private String from;
     private String to;
     private String comission;
-    private boolean purchaseBeginningDay;
+    private String interval;
+    private boolean automaticThreshold;
+    private boolean limitToInitialInvestment;
 
     public BigDecimal getBaseAmount() {
         return new BigDecimal(baseAmount);
@@ -84,19 +85,27 @@ public class MartingalaProperties {
         this.comission = comission;
     }
 
-    public BigDecimal getIncrease() {
-        return new BigDecimal(increase);
+    public String getInterval() {
+        return interval;
     }
 
-    public void setIncrease(String increase) {
-        this.increase = increase;
+    public void setInterval(String interval) {
+        this.interval = interval;
     }
 
-    public boolean isPurchaseBeginningDay() {
-        return purchaseBeginningDay;
+    public boolean isAutomaticThreshold() {
+        return automaticThreshold;
     }
 
-    public void setPurchaseBeginningDay(boolean purchaseBeginningDay) {
-        this.purchaseBeginningDay = purchaseBeginningDay;
+    public void setAutomaticThreshold(boolean automaticThreshold) {
+        this.automaticThreshold = automaticThreshold;
+    }
+
+    public boolean isLimitToInitialInvestment() {
+        return limitToInitialInvestment;
+    }
+
+    public void setLimitToInitialInvestment(boolean limitToInitialInvestment) {
+        this.limitToInitialInvestment = limitToInitialInvestment;
     }
 }

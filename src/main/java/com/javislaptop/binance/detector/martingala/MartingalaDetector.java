@@ -1,5 +1,6 @@
 package com.javislaptop.binance.detector.martingala;
 
+import com.binance.api.client.domain.market.CandlestickInterval;
 import com.javislaptop.binance.api.Binance;
 import com.javislaptop.binance.api.BinanceFormatter;
 import com.javislaptop.binance.api.domain.Candlestick;
@@ -24,7 +25,7 @@ import java.util.List;
 @EnableConfigurationProperties(MartingalaProperties.class)
 public class MartingalaDetector {
 
-    private static final Logger logger = LogManager.getLogger(PumpInstantDetector.class);
+    private static final Logger logger = LogManager.getLogger(MartingalaDetector.class);
 
     private final Binance binance;
     private final BinanceFormatter binanceFormatter;
@@ -47,7 +48,6 @@ public class MartingalaDetector {
         Instant currentTo = from.plus(1, ChronoUnit.DAYS);
 
         while (from.compareTo(to) < 0) {
-
             for (String tradingCurrency : tradingCurrencies) {
                 String symbol = tradingCurrency + baseCurrency;
                 Integer tradeDecimals = binanceFormatter.getTradeDecimals(symbol);

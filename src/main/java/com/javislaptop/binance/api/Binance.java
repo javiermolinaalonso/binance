@@ -250,6 +250,20 @@ public class Binance {
         return getOpenOrders(null);
     }
 
+
+    public List<com.javislaptop.binance.api.domain.Candlestick> getCandlesticks(String symbol, Instant beginTime, Instant endTime, String interval) {
+        List<com.javislaptop.binance.api.domain.Candlestick> candlesticks = binanceApiRestClient.getCandlestickBars(symbol, CandlestickInterval.valueOf(interval), 1000, beginTime.toEpochMilli(), endTime.toEpochMilli())
+                .stream()
+                .map(c -> new BinanceCandlestickConverter().convert(c))
+                .collect(Collectors.toList());
+        if (candlesticks.size() == 1000) {
+            com.javislaptop.binance.api.domain.Candlestick lastCandlestick = candlesticks.get(candlesticks.size() - 1);
+            if (lastCandlestick.getCloseTime().compareTo(endTime) < 0) {
+                candlesticks.addAll(getCandlesticks(symbol, lastCandlestick.getCloseTime().plus(1, ChronoUnit.MILLIS), endTime, interval));
+            }
+        }
+        return candlesticks;
+    }
     public List<com.javislaptop.binance.api.domain.Candlestick> getMinuteBar(String symbol, Instant beginTime, Instant endTime) {
         return binanceApiRestClient.getCandlestickBars(symbol, CandlestickInterval.FIVE_MINUTES, 1000, beginTime.toEpochMilli(), endTime.toEpochMilli())
                 .stream()
