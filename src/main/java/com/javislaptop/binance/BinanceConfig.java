@@ -25,6 +25,7 @@ public class BinanceConfig {
                 .newInstance(binanceProperties.getKey(), binanceProperties.getSecret())
                 .newRestClient();
     }
+
     @Bean
     public BinanceApiWebSocketClient binanceApiWebSocketClient() {
         return BinanceApiClientFactory

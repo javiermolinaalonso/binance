@@ -58,7 +58,7 @@ public class WalletState {
         }
         String tradeCoin = symbol.replaceAll(baseCurrency, "");
         BigDecimal fee = computeFee(tradeBaseCoins);
-        BigDecimal purchasedCoins = tradeBaseCoins.subtract(fee).divide(price, binanceFormatter.getBaseAssetPrecision(symbol), RoundingMode.DOWN);
+        BigDecimal purchasedCoins = tradeBaseCoins.subtract(fee).divide(price, 8, RoundingMode.DOWN);
         tradeCoins.put(tradeCoin, tradeCoins.getOrDefault(tradeCoin, BigDecimal.ZERO).add(purchasedCoins));
         baseCoins = baseCoins.subtract(tradeBaseCoins);
         tradedVolume = tradedVolume.add(tradeBaseCoins);
@@ -69,7 +69,7 @@ public class WalletState {
         String tradeCoin = symbol.replaceAll(baseCurrency, "");
         BigDecimal amountOfTradeCoins = tradeCoins.getOrDefault(tradeCoin, BigDecimal.ZERO);
         if (amountOfTradeCoins.compareTo(BigDecimal.ZERO) > 0) {
-            BigDecimal baseCoinAfterSell = amountOfTradeCoins.multiply(sellPrice).setScale(binanceFormatter.getQuotePrecision(symbol), RoundingMode.DOWN);
+            BigDecimal baseCoinAfterSell = amountOfTradeCoins.multiply(sellPrice).setScale(8, RoundingMode.DOWN);
             BigDecimal fee = computeFee(baseCoinAfterSell);
             baseCoinAfterSell = baseCoinAfterSell.subtract(fee);
             baseCoins = baseCoins.add(baseCoinAfterSell);

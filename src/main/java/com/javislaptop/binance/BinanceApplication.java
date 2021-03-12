@@ -1,18 +1,14 @@
 package com.javislaptop.binance;
 
 import com.javislaptop.binance.detector.arbitrage.ArbitrageService;
-import com.javislaptop.binance.detector.martingala.MartingalaDetector;
-import com.javislaptop.binance.detector.martingala.MartingalaDetectorImproved;
+import com.javislaptop.binance.detector.martingala.BinanceMartingalaDetector;
 import com.javislaptop.binance.detector.pump.HistoricalPumpDetector;
 import com.javislaptop.binance.detector.pump.RealtimePumpDetector;
 import com.javislaptop.binance.orderbook.OrderBookTrader;
 import com.javislaptop.binance.pumper.PumpNDumper;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Bean;
 
 import java.util.Scanner;
 
@@ -31,10 +27,9 @@ public class BinanceApplication {
     private final ArbitrageService arbitrageService;
     private final OrderBookTrader orderBookTrader;
     private final HistoricalPumpDetector buyOffAnalyzer;
-    private final MartingalaDetector martingalaDetector;
-    private final MartingalaDetectorImproved martingalaDetectorImproved;
+    private final BinanceMartingalaDetector martingalaDetector;
 
-    public BinanceApplication(Scanner scanner, PumpNDumper pumpNDumper, RealtimePumpDetector realtimePumpDetector, ArbitrageService arbitrageService, OrderBookTrader orderBookTrader, HistoricalPumpDetector buyOffAnalyzer, MartingalaDetector martingalaDetector, MartingalaDetectorImproved martingalaDetectorImproved) {
+    public BinanceApplication(Scanner scanner, PumpNDumper pumpNDumper, RealtimePumpDetector realtimePumpDetector, ArbitrageService arbitrageService, OrderBookTrader orderBookTrader, HistoricalPumpDetector buyOffAnalyzer, BinanceMartingalaDetector martingalaDetector) {
         this.scanner = scanner;
         this.pumpNDumper = pumpNDumper;
         this.realtimePumpDetector = realtimePumpDetector;
@@ -42,42 +37,41 @@ public class BinanceApplication {
         this.orderBookTrader = orderBookTrader;
         this.buyOffAnalyzer = buyOffAnalyzer;
         this.martingalaDetector = martingalaDetector;
-        this.martingalaDetectorImproved = martingalaDetectorImproved;
     }
 
-    @Bean
-    public CommandLineRunner commandLineRunner(ApplicationContext ctx) {
-        return args -> {
-            try {
-            System.out.println("1. Manual pump");
-            System.out.println("2. Automated pump");
-            System.out.println("3. Arbitrage");
-            System.out.println("4. Order Book trading");
-            System.out.println("5. Historical buyoff analyzer");
-            System.out.println("6. Martingala");
-            System.out.println("9. quit");
-//            String option = scanner.nextLine();
-                String option = "6";
-            if (option.equals("1")) {
-                pumpNDumper.execute();
-            } else if (option.equals("2")) {
-                realtimePumpDetector.enablePumpDetection();
-            } else if(option.equals("3")) {
-                arbitrageService.execute();
-            } else if (option.equals("4")) {
-                orderBookTrader.execute();
-            } else if (option.equals("5")) {
-                buyOffAnalyzer.execute();
-                System.exit(0);
-            }else if (option.equals("6")) {
-//                martingalaDetector.execute();
-                martingalaDetectorImproved.execute();
-                System.exit(0);
-            }
-            } catch (Exception e ){
-                e.printStackTrace();
-            }
-        };
-    }
+//    @Bean
+//    public CommandLineRunner commandLineRunner(ApplicationContext ctx) {
+//        return args -> {
+//            try {
+//            System.out.println("1. Manual pump");
+//            System.out.println("2. Automated pump");
+//            System.out.println("3. Arbitrage");
+//            System.out.println("4. Order Book trading");
+//            System.out.println("5. Historical buyoff analyzer");
+//            System.out.println("6. Martingala");
+//            System.out.println("9. quit");
+////            String option = scanner.nextLine();
+//                String option = "6";
+//            if (option.equals("1")) {
+//                pumpNDumper.execute();
+//            } else if (option.equals("2")) {
+//                realtimePumpDetector.enablePumpDetection();
+//            } else if(option.equals("3")) {
+//                arbitrageService.execute();
+//            } else if (option.equals("4")) {
+//                orderBookTrader.execute();
+//            } else if (option.equals("5")) {
+//                buyOffAnalyzer.execute();
+//                System.exit(0);
+//            }else if (option.equals("6")) {
+////                martingalaDetector.execute();
+//                martingalaDetectorImproved.execute();
+//                System.exit(0);
+//            }
+//            } catch (Exception e ){
+//                e.printStackTrace();
+//            }
+//        };
+//    }
 
 }

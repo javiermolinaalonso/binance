@@ -36,13 +36,11 @@ public class AccountService {
         account.getBalances().stream().filter(b -> new BigDecimal(b.getFree()).compareTo(BigDecimal.ZERO) > 0).forEach(b -> logger.info("{}", b));
     }
 
-    @Scheduled(initialDelay = 5000, fixedRate = 5000)
     public void refreshAccount() {
         logger.debug("Synchronizing account");
         this.account = binance.getAccount();
     }
 
-    @Scheduled(initialDelay = 5000, fixedRate = 5000)
     public void refreshOrders() {
         logger.debug("Refreshing orders");
         List<Order> openOrders = binance.getOpenOrders();
