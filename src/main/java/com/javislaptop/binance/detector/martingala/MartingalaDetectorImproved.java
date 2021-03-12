@@ -35,18 +35,7 @@ public class MartingalaDetectorImproved {
     }
 
     public void execute() {
-        List<String> tradingCurrencies = props.getTradingCurrency();
-        String baseCurrency = props.getBaseCurrency();
-
-        Instant from = props.getFrom().atStartOfDay(ZoneId.of("UTC")).toInstant();
-        Instant to = props.getTo().atStartOfDay(ZoneId.of("UTC")).toInstant();
-        String interval = props.getInterval();
-        Map<String, List<Candlestick>> data = populate(tradingCurrencies, baseCurrency, from, to, interval);
-
-        //This algorithm assumes all symbols exist for the entire period of time
-        if (data.values().stream().map(List::size).distinct().count() > 1) {
-            throw new RuntimeException("The data is different for each pair, please improve the algorithm");
-        }
+        Map<String, List<Candlestick>> data = populate();
 
         int limit = data.values().stream().map(List::size).findAny().get();
         for (int i = 1; i < limit; i++) {
@@ -66,12 +55,20 @@ public class MartingalaDetectorImproved {
                 wallet.sell(symbol, c.getClose(), c.getCloseTime());
             }
         }
-//        wallet.getTrades().stream().sorted(Comparator.comparing(Trade::getWhen)).forEach(logger::info);
         wallet.printInfo();
     }
 
-    private Map<String, List<Candlestick>> populate(List<String> tradingCurrencies, String baseCurrency, Instant from, Instant to, String interval) {
-        return tradingCurrencies.stream().collect(Collectors.toMap(t -> t + baseCurrency, t -> binance.getCandlesticks(t + baseCurrency, from, to, interval)));
+    private Map<String, List<Candlestick>> populate() {
+        Instant from = props.getFrom().atStartOfDay(ZoneId.of("UTC")).toInstant();
+        Instant to = props.getTo().atStartOfDay(ZoneId.of("UTC")).toInstant();
+        String interval = props.getInterval();
+        String baseCurrency = props.getBaseCurrency();
+        List<String> tradingCurrencies = props.getTradingCurrency();
+        Map<String, List<Candlestick>> data = tradingCurrencies.stream().collect(Collectors.toMap(t -> t + baseCurrency, t -> binance.getCandlesticks(t + baseCurrency, from, to, interval)));
+        if (data.values().stream().map(List::size).distinct().count() > 1) {
+            throw new RuntimeException("The data is different for each pair, please improve the algorithm");
+        }
+        return data;
     }
 
     private BigDecimal updateBuyThreshold(BigDecimal referencePrice, Integer tradeDecimals, int attempts) {
