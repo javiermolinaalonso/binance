@@ -3,12 +3,13 @@ binance:
   secret:
 
 martingala:
-  originalAmount: 10000
-  baseAmount: 500
+  originalAmount: 5000
+  baseAmount: 100
   automaticThreshold: false
   decrease: 0.02
   baseCurrency: BTC
   limitToInitialInvestment: false
+  minutesToBuyAgain: 5
 #  tradingCurrency: SUSHI, TRB, YFI, RUNE, WNXM #Best for the 2020
 #  tradingCurrency: BQX, SNX, BAND, SOL, SRM #2nds Best for the 2020
 #  tradingCurrency: KSM, COMP, DOT, BAL, GAS #3rds Best for the 2020

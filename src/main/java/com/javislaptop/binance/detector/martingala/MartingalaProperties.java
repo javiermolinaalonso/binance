@@ -20,6 +20,7 @@ public class MartingalaProperties {
     private String interval;
     private boolean automaticThreshold;
     private boolean limitToInitialInvestment;
+    private int minutesToBuyAgain;
 
     public BigDecimal getBaseAmount() {
         return new BigDecimal(baseAmount);
@@ -107,5 +108,13 @@ public class MartingalaProperties {
 
     public void setLimitToInitialInvestment(boolean limitToInitialInvestment) {
         this.limitToInitialInvestment = limitToInitialInvestment;
+    }
+
+    public int getMinutesToBuyAgain() {
+        return minutesToBuyAgain;
+    }
+
+    public void setMinutesToBuyAgain(int minutesToBuyAgain) {
+        this.minutesToBuyAgain = minutesToBuyAgain;
     }
 }

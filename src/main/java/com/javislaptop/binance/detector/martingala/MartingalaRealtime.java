@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,15 +29,17 @@ public class MartingalaRealtime {
     private final MartingalaProperties props;
 
     private final Map<String, BigDecimal> thresholds;
+    private final Map<String, Instant> whenToPurchase;
 
     public MartingalaRealtime(Binance binance, BinanceFormatter binanceFormatter, MartingalaProperties props) {
         this.binance = binance;
         this.binanceFormatter = binanceFormatter;
         this.props = props;
         this.thresholds = new HashMap<>();
+        this.whenToPurchase = new HashMap<>();
     }
 
-    @PostConstruct
+//    @PostConstruct
     public void init() {
         updateThresholds();
     }
@@ -69,6 +73,11 @@ public class MartingalaRealtime {
     }
 
     private void execute(String symbol) {
+        Instant temporalRestrictionInstant = whenToPurchase.get(symbol);
+        if (temporalRestrictionInstant != null && temporalRestrictionInstant.isAfter(Instant.now())) {
+            logger.info("Skipping possible purchase for {}", symbol);
+            return;
+        }
         BigDecimal price = binance.getBuyPrice(symbol);
         if (price.compareTo(thresholds.get(symbol)) < 0) {
             logger.info("The price for {} went beyond the threshold", symbol);
@@ -83,6 +92,7 @@ public class MartingalaRealtime {
 
     private void buy(String symbol, BigDecimal price) {
         logger.info("Purchasing {} at price {}", symbol, price);
+        whenToPurchase.put(symbol, Instant.now().plus(props.getMinutesToBuyAgain(), ChronoUnit.MINUTES));
 //        NewOrderResponse newOrderResponse = binance.buyLimit(symbol, props.getBaseAmount(), price);
         //TODO do something with this?
     }
