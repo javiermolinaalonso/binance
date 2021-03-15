@@ -1,7 +1,7 @@
 package com.javislaptop.binance;
 
 import com.javislaptop.binance.detector.arbitrage.ArbitrageService;
-import com.javislaptop.binance.detector.martingala.BinanceMartingalaDetector;
+import com.javislaptop.binance.detector.martingala.MartingalaDetector;
 import com.javislaptop.binance.detector.pump.HistoricalPumpDetector;
 import com.javislaptop.binance.detector.pump.RealtimePumpDetector;
 import com.javislaptop.binance.orderbook.OrderBookTrader;
@@ -27,9 +27,9 @@ public class BinanceApplication {
     private final ArbitrageService arbitrageService;
     private final OrderBookTrader orderBookTrader;
     private final HistoricalPumpDetector buyOffAnalyzer;
-    private final BinanceMartingalaDetector martingalaDetector;
+    private final MartingalaDetector martingalaDetector;
 
-    public BinanceApplication(Scanner scanner, PumpNDumper pumpNDumper, RealtimePumpDetector realtimePumpDetector, ArbitrageService arbitrageService, OrderBookTrader orderBookTrader, HistoricalPumpDetector buyOffAnalyzer, BinanceMartingalaDetector martingalaDetector) {
+    public BinanceApplication(Scanner scanner, PumpNDumper pumpNDumper, RealtimePumpDetector realtimePumpDetector, ArbitrageService arbitrageService, OrderBookTrader orderBookTrader, HistoricalPumpDetector buyOffAnalyzer, MartingalaDetector martingalaDetector) {
         this.scanner = scanner;
         this.pumpNDumper = pumpNDumper;
         this.realtimePumpDetector = realtimePumpDetector;

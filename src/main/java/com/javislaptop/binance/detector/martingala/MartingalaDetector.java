@@ -1,6 +1,5 @@
 package com.javislaptop.binance.detector.martingala;
 
-import com.javislaptop.binance.api.Binance;
 import com.javislaptop.binance.api.BinanceFormatter;
 import com.javislaptop.binance.api.domain.Candlestick;
 import org.apache.logging.log4j.LogManager;
@@ -8,32 +7,32 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.Instant;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
-abstract class MartingalaDetector {
+@Service
+@EnableConfigurationProperties(MartingalaProperties.class)
+public class MartingalaDetector {
 
     private static final Logger logger = LogManager.getLogger(MartingalaDetector.class);
 
-    final MartingalaProperties props;
-    final WalletState wallet;
+    private final MartingalaLoader loader;
+    private final BinanceFormatter binanceFormatter;
+    private final MartingalaProperties props;
+    private final WalletState wallet;
 
-    MartingalaDetector(MartingalaProperties martingalaProperties, WalletState wallet) {
+    public MartingalaDetector(MartingalaLoader loader, BinanceFormatter binanceFormatter, MartingalaProperties martingalaProperties, WalletState wallet) {
+        this.loader = loader;
+        this.binanceFormatter = binanceFormatter;
         this.props = martingalaProperties;
         this.wallet = wallet;
     }
 
-    abstract Map<String, List<Candlestick>> populate();
-
-    abstract BigDecimal updateBuyThreshold(BigDecimal referencePrice, String symbol, int attempts);
-
     public void execute() {
-        Map<String, List<Candlestick>> data = populate();
+        Map<String, List<Candlestick>> data = loader.load(props.getFrom(), props.getTo(), props.getTradingCurrency(), props.getBaseCurrency(), props.getInterval());
 
         int limit = data.values().stream().map(List::size).findAny().get();
         for (int i = 1; i < limit; i++) {
@@ -55,5 +54,13 @@ abstract class MartingalaDetector {
         wallet.printInfo();
     }
 
+    private BigDecimal updateBuyThreshold(BigDecimal referencePrice, String symbol, int attempts) {
+        Integer tradeDecimals = binanceFormatter.getTradeDecimals(symbol);
+        BigDecimal ratio = props.getDecrease();
+        if (props.isAutomaticThreshold()) {
+            ratio = ratio.multiply(new BigDecimal(attempts));
+        }
+        return referencePrice.subtract(referencePrice.multiply(ratio)).setScale(tradeDecimals, RoundingMode.DOWN);
+    }
 
 }

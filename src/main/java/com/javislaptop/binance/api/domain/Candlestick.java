@@ -94,6 +94,10 @@ public class Candlestick {
         return getHigh().divide(getLow(), RoundingMode.HALF_DOWN).subtract(BigDecimal.ONE);
     }
 
+    public BigDecimal getLowerShadow() {
+        return getClose().divide(getLow(), RoundingMode.HALF_DOWN).min(getOpen().divide(getLow(), RoundingMode.HALF_DOWN)).subtract(BigDecimal.ONE);
+    }
+
     public boolean isBullish() {
         return getClose().compareTo(getOpen()) > 0;
     }

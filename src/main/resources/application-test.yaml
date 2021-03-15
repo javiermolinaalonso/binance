@@ -4,11 +4,15 @@ binance:
 
 martingala:
   originalAmount: 10000
-  baseAmount: 200
+  baseAmount: 500
   automaticThreshold: false
   decrease: 0.02
   baseCurrency: BTC
   limitToInitialInvestment: false
+#  tradingCurrency: SUSHI, TRB, YFI, RUNE, WNXM #Best for the 2020
+#  tradingCurrency: BQX, SNX, BAND, SOL, SRM #2nds Best for the 2020
+#  tradingCurrency: KSM, COMP, DOT, BAL, GAS #3rds Best for the 2020
+#  tradingCurrency: XVS,REEF,ASR,ALPHA,GLM # The best ones for the first quarter of 2021
   tradingCurrency: THETA,DOT,NANO,LINK,XTZ
   interval: DAILY
   from: 2021-01-01
