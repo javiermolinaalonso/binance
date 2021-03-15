@@ -30,9 +30,9 @@ public class MartingalaLoader {
         Instant from = localFrom.atStartOfDay(ZoneId.of("UTC")).toInstant();
         Instant to = localTo.atStartOfDay(ZoneId.of("UTC")).toInstant();
         Map<String, List<Candlestick>> data = symbols.stream().collect(Collectors.toMap(t -> t, t -> binance.getCandlesticks(t, from, to, interval)));
-//        if (data.values().stream().map(List::size).distinct().count() > 1) {
-//            throw new RuntimeException("The data is different for each pair, please improve the algorithm");
-//        }
+        if (data.values().stream().map(List::size).distinct().count() > 1) {
+            throw new RuntimeException("The data is different for each pair, please improve the algorithm");
+        }
         return data;
 
     }

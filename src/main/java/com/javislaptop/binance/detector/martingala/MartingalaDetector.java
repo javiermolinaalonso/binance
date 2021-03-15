@@ -31,6 +31,7 @@ public class MartingalaDetector {
         this.wallet = wallet;
     }
 
+    @PostConstruct
     public void execute() {
         Map<String, List<Candlestick>> data = loader.load(props.getFrom(), props.getTo(), props.getTradingCurrency(), props.getBaseCurrency(), props.getInterval());
 

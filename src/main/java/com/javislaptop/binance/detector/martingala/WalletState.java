@@ -103,13 +103,22 @@ public class WalletState {
         TreeMap<Instant, List<Trade>> periodTrades = trades.stream().collect(Collectors.groupingBy(Trade::getWhen, TreeMap::new, toList()));
         periodTrades.forEach((key, value) -> {
             BigDecimal investedAmount = getInvestedAmount(value);
-            BigDecimal receivedAmount = value.stream().filter(t -> t.getDirection().equals("SELL")).map(t -> t.getAmount().multiply(t.getPrice())).reduce(BigDecimal.ZERO, BigDecimal::add);
-            BigDecimal benefit = receivedAmount.divide(investedAmount, RoundingMode.HALF_DOWN).subtract(BigDecimal.ONE).multiply(new BigDecimal(100)).setScale(2, RoundingMode.HALF_DOWN);
-            String ranOutMoney = "";
-            if (daysRanOutOfMoney.contains(key)) {
-                ranOutMoney = "Ran out of money";
+            if (investedAmount.compareTo(BigDecimal.ZERO) > 0) {
+                BigDecimal receivedAmount = getReceivedAmount(value);
+                BigDecimal benefit = calculateBenefit(investedAmount, receivedAmount);
+                String ranOutMoney = "";
+                if (daysRanOutOfMoney.contains(key)) {
+                    ranOutMoney = "Ran out of money";
+                }
+                logger.info("The benefit for the period {} is {}%. Spent amount was: {}. {}", key.truncatedTo(ChronoUnit.MINUTES), benefit, investedAmount.setScale(2, RoundingMode.HALF_DOWN), ranOutMoney);
+                Map<String, List<Trade>> t = value.stream().collect(Collectors.groupingBy(Trade::getSymbol));
+                t.forEach((k, v) -> {
+                    BigDecimal pairInvestedAmount = getInvestedAmount(v);
+                    BigDecimal pairReceivedAmount = getReceivedAmount(v);
+                    BigDecimal b = calculateBenefit(pairInvestedAmount, pairReceivedAmount);
+                    logger.info("Benefit for {}: {}. List of trades: {}", k, b, v);
+                });
             }
-            logger.info("The benefit for the period {} is {}%. Spent amount was: {}. {}", key.truncatedTo(ChronoUnit.MINUTES), benefit, investedAmount.setScale(2, RoundingMode.HALF_DOWN), ranOutMoney);
         });
         logger.info("Summary for {}{} between {} and {}. Starting with {} {} with base trades of {}{}.",
                 tradingCurrencies, baseCurrency, props.getFrom(), props.getTo(), props.getOriginalAmount(), props.getBaseCurrency(), props.getBaseAmount(), props.getBaseCurrency());
@@ -118,6 +127,14 @@ public class WalletState {
         logger.info("The traded volume is {} {}", tradedVolume, baseCurrency);
 //        SortedMap<Instant, List<Trade>> periodTrades = trades.stream().collect(Collectors.groupingBy(Trade::getWhen));
 
+    }
+
+    private BigDecimal calculateBenefit(BigDecimal investedAmount, BigDecimal receivedAmount) {
+        return receivedAmount.divide(investedAmount, RoundingMode.HALF_DOWN).subtract(BigDecimal.ONE).multiply(new BigDecimal(100)).setScale(2, RoundingMode.HALF_DOWN);
+    }
+
+    private BigDecimal getReceivedAmount(List<Trade> value) {
+        return value.stream().filter(t -> t.getDirection().equals("SELL")).map(t -> t.getAmount().multiply(t.getPrice())).reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     private BigDecimal getInvestedAmount(Instant when) {
