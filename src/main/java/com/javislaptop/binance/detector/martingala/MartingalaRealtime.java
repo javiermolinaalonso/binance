@@ -30,6 +30,7 @@ public class MartingalaRealtime {
 
     private final Map<String, BigDecimal> thresholds;
     private final Map<String, Instant> whenToPurchase;
+    private final WalletState walletState;
 
     public MartingalaRealtime(Binance binance, BinanceFormatter binanceFormatter, MartingalaProperties props) {
         this.binance = binance;
@@ -37,9 +38,10 @@ public class MartingalaRealtime {
         this.props = props;
         this.thresholds = new HashMap<>();
         this.whenToPurchase = new HashMap<>();
+        this.walletState = new WalletState(props, binanceFormatter);
     }
 
-//    @PostConstruct
+    @PostConstruct
     public void init() {
         updateThresholds();
     }
@@ -51,16 +53,26 @@ public class MartingalaRealtime {
         updateThresholds();
     }
 
+    @Scheduled(cron = "0 0 * * * *")
+    public void hourlyInfo() {
+        getSymbols().forEach(s -> {
+            BigDecimal price = binance.getSellPrice(s);
+            logger.info("Price for {}:{}", s, price);
+        });
+    }
+
     private void updateThresholds() {
-        getSymbols().forEach(symbol -> thresholds.put(symbol, updateBuyThreshold(symbol)));
+        getSymbols().forEach(symbol -> updateBuyThreshold(symbol));
     }
 
     private void sell() {
         props.getTradingCurrency().forEach(asset -> {
+            String symbol = asset + props.getBaseCurrency();
+            BigDecimal price = binance.getSellPrice(symbol);
+            walletState.sell(symbol, price, Instant.now());
+
             BigDecimal assetBalance = new BigDecimal(binance.getAssetBalance(asset));
             if (assetBalance.compareTo(BigDecimal.ZERO) > 0) {
-                String symbol = asset + props.getBaseCurrency();
-                BigDecimal price = binance.getSellPrice(symbol);
 //                binance.sellMarket(symbol, assetBalance);
                 logger.info("Selling {}{} at {}", assetBalance, asset, price);
             }
@@ -93,6 +105,7 @@ public class MartingalaRealtime {
     private void buy(String symbol, BigDecimal price) {
         logger.info("Purchasing {} at price {}", symbol, price);
         whenToPurchase.put(symbol, Instant.now().plus(props.getMinutesToBuyAgain(), ChronoUnit.MINUTES));
+        walletState.buy(symbol, props.getBaseAmount(), price, Instant.now());
 //        NewOrderResponse newOrderResponse = binance.buyLimit(symbol, props.getBaseAmount(), price);
         //TODO do something with this?
     }
@@ -101,17 +114,17 @@ public class MartingalaRealtime {
         return props.getTradingCurrency().stream().map(c -> c + props.getBaseCurrency()).collect(Collectors.toList());
     }
 
-    private BigDecimal updateBuyThreshold(String symbol) {
+    private void updateBuyThreshold(String symbol) {
         BigDecimal referencePrice = binance.getSellPrice(symbol);
-        return updateBuyThreshold(symbol, referencePrice);
+        updateBuyThreshold(symbol, referencePrice);
     }
 
-    private BigDecimal updateBuyThreshold(String symbol, BigDecimal referencePrice) {
+    private void updateBuyThreshold(String symbol, BigDecimal referencePrice) {
         Integer tradeDecimals = binanceFormatter.getTradeDecimals(symbol);
         BigDecimal ratio = props.getDecrease();
         BigDecimal threshold = referencePrice.subtract(referencePrice.multiply(ratio)).setScale(tradeDecimals, RoundingMode.DOWN);
         logger.info("Updated buy threshold for {} to {}", symbol, threshold);
-        return threshold;
+        thresholds.put(symbol, threshold);
     }
 
 }

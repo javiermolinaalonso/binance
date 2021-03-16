@@ -7,14 +7,14 @@ martingala:
   baseAmount: 100
   automaticThreshold: false
   decrease: 0.02
-  baseCurrency: BTC
+  baseCurrency: USDT
   limitToInitialInvestment: false
   minutesToBuyAgain: 5
 #  tradingCurrency: SUSHI, TRB, YFI, RUNE, WNXM #Best for the 2020
 #  tradingCurrency: BQX, SNX, BAND, SOL, SRM #2nds Best for the 2020
 #  tradingCurrency: KSM, COMP, DOT, BAL, GAS #3rds Best for the 2020
 #  tradingCurrency: XVS,REEF,ASR,ALPHA,GLM # The best ones for the first quarter of 2021
-  tradingCurrency: THETA,DOT,NANO,LINK,XTZ
+  tradingCurrency: THETA,DOT,NANO,LINK,XTZ,XVS,REEF,ASR
   interval: DAILY
   from: 2021-01-01
   to: 2021-03-01
